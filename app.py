@@ -6,7 +6,7 @@ import transformers
 from uuid import uuid4
 from peft import PeftModel, PeftConfig
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-
+from litellm import completion
 from utils import Agent, get_starter_prompt, format_sotopia_prompt
 
 DEPLOYED = os.getenv("DEPLOYED", "true").lower() == "true" 
@@ -34,7 +34,7 @@ def prepare_sotopia_info():
 
 
 
-def prepare(model_name):
+'''def prepare(model_name):
     compute_type = torch.float16
     config_dict = PeftConfig.from_json_file("peft_config.json")
     config = PeftConfig.from_peft_type(**config_dict)
@@ -43,11 +43,10 @@ def prepare(model_name):
         model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1").to("cuda")
         tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
         model = PeftModel.from_pretrained(model, model_name, config=config).to(compute_type).to("cuda")
-    elif 'GPT3.5'in model_name:
-        model
-        tokenizer= None
+    else:
+         tokenizer = AutoTokenizer.from_pretrained(model_name)
     return model, tokenizer
-
+'''
 
 
 
@@ -164,29 +163,27 @@ def run_chat(
     max_tokens: int,
     model_selection:str
 ):
-    model, tokenizer = prepare(model_selection)
     prompt = format_sotopia_prompt(
-        message, 
-        history, 
-        instructions, 
-        user_name, 
-        bot_name
-    )
-    if 'GPT3.5' not in model_selection:
-        input_tokens = tokenizer(prompt, return_tensors="pt", padding="do_not_pad").input_ids.to("cuda")
-        input_length = input_tokens.shape[-1]
-        output_tokens = model.generate(
-            input_tokens,
-            temperature=temperature,
-            top_p=top_p,
-            max_length=max_tokens,
-            pad_token_id=tokenizer.eos_token_id,
-            num_return_sequences=1
+            message, 
+            history, 
+            instructions, 
+            user_name, 
+            bot_name
         )
-        output_tokens = output_tokens[:, input_length:]
-        text_output = tokenizer.decode(output_tokens[0], skip_special_tokens=True)
+    if 'GPT' not in model_selection:
+            text_output = completion(
+            model=f"huggingface/{model_selection}",
+            messages=[{ f"content": prompt,"role": "user"}],
+            api_base="https://your-huggingface-api-endpoint",
+            max_tokens=max_tokens
+        )
+    else:
+            text_output = completion(
+            model="gpt-3.5-turbo",
+            messages=[{"content": prompt,"role": "user"}],
+            max_tokens=max_tokens
+        )
     return text_output
-
   
 def chat_tab():
     #model, tokenizer = prepare()
@@ -203,7 +200,6 @@ def chat_tab():
         max_tokens: int,
         model_selection:str
     ):
-        model, tokenizer = prepare(model_selection)
         prompt = format_sotopia_prompt(
             message, 
             history, 
@@ -211,20 +207,20 @@ def chat_tab():
             user_name, 
             bot_name
         )
-        input_tokens = tokenizer(prompt, return_tensors="pt", padding="do_not_pad").input_ids.to("cuda")
-        input_length = input_tokens.shape[-1]
-        output_tokens = model.generate(
-            input_tokens,
-            temperature=temperature,
-            top_p=top_p,
-            max_length=max_tokens,
-            pad_token_id=tokenizer.eos_token_id,
-            num_return_sequences=1
-        )
-        output_tokens = output_tokens[:, input_length:]
-        text_output = tokenizer.decode(output_tokens[0], skip_special_tokens=True)
+        if 'GPT' not in model_selection:
+            text_output = completion(
+            model=f"huggingface/{model_selection}",
+            messages=[{ f"content": "{prompt}","role": "user"}],
+            api_base="https://your-huggingface-api-endpoint",
+            max_tokens=max_tokens
+        ).choices[0].message.content
+        else:
+            text_output = completion(
+            model="gpt-3.5-turbo",
+            messages=[{ f"content": "{prompt}","role": "user"}],
+            max_tokens=max_tokens
+        ).choices[0].message.content
         return text_output
-
 
     with gr.Column():
         with gr.Row():
