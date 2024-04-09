@@ -42,7 +42,7 @@ def prepare(model_name):
     if 'mistral'in model_name:
         model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1").to("cuda")
         tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
-        model = PeftModel.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1", model_name, config=config).to(compute_type).to("cuda")
+        model = PeftModel.from_pretrained(model, model_name, config=config).to(compute_type).to("cuda")
     else:
          tokenizer = AutoTokenizer.from_pretrained(model_name)
     return model, tokenizer
