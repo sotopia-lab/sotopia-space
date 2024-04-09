@@ -150,7 +150,7 @@ def run_chat(
     text_output = tokenizer.decode(output_tokens[0], skip_special_tokens=True)
     return text_output
 
-
+  
 def chat_tab():
     with gr.Column():
         with gr.Row():
