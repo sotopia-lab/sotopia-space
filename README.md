@@ -1,5 +1,5 @@
 ---
-title: Sotopia Pi Demo
+title: Sotopia Demo
 emoji: 💻
 colorFrom: green
 colorTo: pink
@@ -10,4 +10,4 @@ pinned: false
 license: apache-2.0
 ---
 
-Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
+This is a synced repository with a Huggingface Space [demo](https://huggingface.co/spaces/wdplx/Sotopia-demo)
