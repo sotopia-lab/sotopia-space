@@ -48,7 +48,7 @@ def prepare():
 
 def introduction():
     with gr.Column(scale=2):
-        gr.Image("images/sotopia.jpeg", elem_id="banner-image", show_label=False)
+        gr.Image("images/sotopia.png", elem_id="banner-image", show_label=False)
     with gr.Column(scale=5):
         gr.Markdown(
             """# Sotopia-Pi Demo Test
@@ -226,8 +226,8 @@ def chat_tab():
                         show_label=False,
                         rtl=False,
                         avatar_images=(
-                            "images/user_icon.png", 
-                            "images/bot_icon.png"
+                            "images/profile1.png", 
+                            "images/profile2.png"
                         ),
                     ),
                     textbox=gr.Textbox(
