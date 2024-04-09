@@ -186,7 +186,6 @@ def run_chat(
     return text_output
   
 def chat_tab():
-    #model, tokenizer = prepare()
     human_agent, machine_agent, scenario, instructions = prepare_sotopia_info()
     # history are input output pairs
     def run_chat(
