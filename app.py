@@ -48,10 +48,10 @@ def prepare():
 
 def introduction():
     with gr.Column(scale=2):
-        gr.Image("images/sotopia.jpeg", elem_id="banner-image", show_label=False)
+        gr.Image("images/sotopia.jpg", elem_id="banner-image", show_label=False)
     with gr.Column(scale=5):
         gr.Markdown(
-            """# Sotopia-Pi Demo Test
+            """# Sotopia-Pi Demo
             **Chat with [Sotopia-Pi](https://github.com/sotopia-lab/sotopia-pi), brainstorm ideas, discuss your holiday plans, and more!**
             
             ➡️️ **Intended Use**: this demo is intended to showcase an early finetuning of [sotopia-pi-mistral-7b-BC_SR](https://huggingface.co/cmu-lti/sotopia-pi-mistral-7b-BC_SR)/
@@ -65,7 +65,6 @@ def introduction():
 
 
 def param_accordion(according_visible=True):
-
     with gr.Accordion("Parameters", open=False, visible=according_visible):
         temperature = gr.Slider(
             minimum=0.1,
@@ -87,29 +86,30 @@ def param_accordion(according_visible=True):
             value=uuid4,
             interactive=False,
             visible=False,
+            label="Session ID",
         )
     return temperature, session_id, max_tokens
 
 
 def sotopia_info_accordion(human_agent, machine_agent, scenario, according_visible=True):
-    with gr.Accordion("Instructions", open=False, visible=according_visible):
+    with gr.Accordion("Sotopia Information", open=False, visible=according_visible):
         with gr.Row():
             with gr.Column():
                 user_name = gr.Textbox(
                     lines=1,
                     label="username",
-                    value=human_agent,
+                    value=human_agent.name,
                     interactive=True,
-                    placeholder="Username: ",
+                    placeholder=f"{human_agent.name}: ",
                     show_label=False,
                     max_lines=1,
                 )
             with gr.Column():
                 bot_name = gr.Textbox(
                     lines=1,
-                    value=machine_agent,
+                    value=machine_agent.name,
                     interactive=True,
-                    placeholder="Bot Name",
+                    placeholder=f"{bot_agent.name}: ",
                     show_label=False,
                     max_lines=1,
                     visible=False,
@@ -226,8 +226,8 @@ def chat_tab():
                         show_label=False,
                         rtl=False,
                         avatar_images=(
-                            "images/user_icon.png", 
-                            "images/bot_icon.png"
+                            "images/profile1.jpg", 
+                            "images/profile2.jpg"
                         ),
                     ),
                     textbox=gr.Textbox(
