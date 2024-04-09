@@ -65,7 +65,6 @@ def introduction():
 
 
 def param_accordion(according_visible=True):
-
     with gr.Accordion("Parameters", open=False, visible=according_visible):
         temperature = gr.Slider(
             minimum=0.1,
@@ -87,18 +86,19 @@ def param_accordion(according_visible=True):
             value=uuid4,
             interactive=False,
             visible=False,
+            label="Session ID",
         )
     return temperature, session_id, max_tokens
 
 
 def sotopia_info_accordion(human_agent, machine_agent, scenario, according_visible=True):
-    with gr.Accordion("Instructions", open=False, visible=according_visible):
+    with gr.Accordion("Sotopia Information", open=False, visible=according_visible):
         with gr.Row():
             with gr.Column():
                 user_name = gr.Textbox(
                     lines=1,
                     label="username",
-                    value=human_agent,
+                    value=human_agent.name,
                     interactive=True,
                     placeholder="Username: ",
                     show_label=False,
@@ -107,7 +107,7 @@ def sotopia_info_accordion(human_agent, machine_agent, scenario, according_visib
             with gr.Column():
                 bot_name = gr.Textbox(
                     lines=1,
-                    value=machine_agent,
+                    value=machine_agent.name,
                     interactive=True,
                     placeholder="Bot Name",
                     show_label=False,
