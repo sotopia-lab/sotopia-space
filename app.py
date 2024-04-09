@@ -41,21 +41,22 @@ def prepare_sotopia_info():
     return human_agent, machine_agent, scenario, instructions
 
 
-def prepare():
-    model_name = "cmu-lti/sotopia-pi-mistral-7b-BC_SR"
+
+
+
+def prepare(model_name):
     compute_type = torch.float16
     config_dict = PeftConfig.from_json_file("peft_config.json")
     config = PeftConfig.from_peft_type(**config_dict)
-    tokenizer = AutoTokenizer.from_pretrained(
-        "mistralai/Mistral-7B-Instruct-v0.1"
-    )
-    model = AutoModelForCausalLM.from_pretrained(
-        "mistralai/Mistral-7B-Instruct-v0.1"
-    ).to("cuda")
-    model = PeftModel.from_pretrained(model, model_name, config=config).to(
-        "cuda"
-    )
+    
+    if 'mistral'in model_name:
+        model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1").to("cuda")
+        tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
+        model = PeftModel.from_pretrained(model, model_name, config=config).to(compute_type).to("cuda")
+    else:
+         tokenizer = AutoTokenizer.from_pretrained(model_name)
     return model, tokenizer
+
 
 
 def introduction():
@@ -79,6 +80,12 @@ def introduction():
 
 def param_accordion(according_visible=True):
     with gr.Accordion("Parameters", open=False, visible=according_visible):
+        model_name  = gr.Dropdown(
+            choices=["cmu-lti/sotopia-pi-mistral-7b-BC_SR", "mistralai/Mistral-7B-Instruct-v0.1", "GPT3.5"],  # Example model choices
+            value="cmu-lti/sotopia-pi-mistral-7b-BC_SR",  # Default value
+            interactive=True,
+            label="Model Selection",
+        )
         temperature = gr.Slider(
             minimum=0.1,
             maximum=1.0,
@@ -101,7 +108,7 @@ def param_accordion(according_visible=True):
             visible=False,
             label="Session ID",
         )
-    return temperature, session_id, max_tokens
+    return temperature, session_id, max_tokens, model_name 
 
 
 def sotopia_info_accordion(
@@ -168,7 +175,10 @@ def run_chat(
     temperature: float,
     top_p: float,
     max_tokens: int,
+    model_selection:str
+
 ):
+    model, tokenizer = prepare(model_selection)
     prompt = format_sotopia_prompt(
         message, history, instructions, user_name, bot_name
     )
@@ -190,7 +200,7 @@ def run_chat(
 
 
 def chat_tab():
-    model, tokenizer = prepare()
+    #model, tokenizer = prepare()
     human_agent, machine_agent, scenario, instructions = prepare_sotopia_info()
 
     # history are input output pairs
@@ -203,7 +213,9 @@ def chat_tab():
         temperature: float,
         top_p: float,
         max_tokens: int,
+        model_selection:str
     ):
+        model, tokenizer = prepare(model_selection)
         prompt = format_sotopia_prompt(
             message, history, instructions, user_name, bot_name
         )
@@ -227,10 +239,9 @@ def chat_tab():
 
     with gr.Column():
         with gr.Row():
-            temperature, session_id, max_tokens = param_accordion()
-            user_name, bot_name, scenario = sotopia_info_accordion(
-                human_agent, machine_agent, scenario
-            )
+            temperature, session_id, max_tokens, model = param_accordion()
+            user_name, bot_name, scenario = sotopia_info_accordion(human_agent, machine_agent, scenario)
+
             instructions = instructions_accordion(instructions)
 
         with gr.Column():
@@ -260,6 +271,7 @@ def chat_tab():
                         temperature,
                         session_id,
                         max_tokens,
+                        model,
                     ],
                     submit_btn="Send",
                     stop_btn="Stop",
