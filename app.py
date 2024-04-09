@@ -37,12 +37,13 @@ model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1
 model = PeftModel.from_pretrained(model, MODEL_NAME, config=config).to(COMPUTE_DTYPE).to("cuda")
 according_visible = True
 
+
 def introduction():
     with gr.Column(scale=2):
         gr.Image("images/sotopia.jpeg", elem_id="banner-image", show_label=False)
     with gr.Column(scale=5):
         gr.Markdown(
-            """# Sotopia-Pi Demo
+            """# Sotopia-Pi Demo Test
             **Chat with [Sotopia-Pi](https://github.com/sotopia-lab/sotopia-pi), brainstorm ideas, discuss your holiday plans, and more!**
             
             ➡️️ **Intended Use**: this demo is intended to showcase an early finetuning of [sotopia-pi-mistral-7b-BC_SR](https://huggingface.co/cmu-lti/sotopia-pi-mistral-7b-BC_SR)/
@@ -52,6 +53,7 @@ def introduction():
             🗄️ **Disclaimer**: User prompts and generated replies from the model may be collected by TII solely for the purpose of enhancing and refining our models. TII will not store any personally identifiable information associated with your inputs. By using this demo, users implicitly agree to these terms.
             """
         )
+
 
 def chat_accordion():
     with gr.Accordion("Parameters", open=False, visible=according_visible):
@@ -63,7 +65,6 @@ def chat_accordion():
             interactive=True,
             label="Temperature",
         )
-        
         max_tokens = gr.Slider(
             minimum=1024,
             maximum=4096,
@@ -72,13 +73,11 @@ def chat_accordion():
             interactive=True,
             label="Max Tokens",
         )
-
         session_id = gr.Textbox(
             value=uuid4,
             interactive=False,
             visible=False,
         )
-
     with gr.Accordion("Instructions", open=False, visible=False):
         instructions = gr.Textbox(
             placeholder="The Instructions",
@@ -114,30 +113,33 @@ def chat_accordion():
     return temperature, instructions, user_name, bot_name, session_id, max_tokens
 
 
-def chat_tab():
-    def run_chat(
-        message: str,
-        history,
-        instructions: str,
-        user_name: str,
-        bot_name: str,
-        temperature: float,
-        top_p: float,
-        max_tokens: int
-    ):
-        prompt = format_chat_prompt(message, history, instructions, user_name, bot_name)
-        input_tokens = tokenizer(prompt, return_tensors="pt", padding="do_not_pad").input_ids.to("cuda")
-        output = model.generate(
-            input_tokens,
-            temperature=temperature,
-            top_p=top_p,
-            max_length=max_tokens,
-            pad_token_id=tokenizer.eos_token_id,
-            num_return_sequences=1
-        )
-        # import pdb; pdb.set_trace()
-        return tokenizer.decode(output[0], skip_special_tokens=True)
+def run_chat(
+    message: str,
+    history,
+    instructions: str,
+    user_name: str,
+    bot_name: str,
+    temperature: float,
+    top_p: float,
+    max_tokens: int
+):
+    prompt = format_chat_prompt(message, history, instructions, user_name, bot_name)
+    input_tokens = tokenizer(prompt, return_tensors="pt", padding="do_not_pad").input_ids.to("cuda")
+    input_length = input_tokens.shape[-1]
+    output_tokens = model.generate(
+        input_tokens,
+        temperature=temperature,
+        top_p=top_p,
+        max_length=max_tokens,
+        pad_token_id=tokenizer.eos_token_id,
+        num_return_sequences=1
+    )
+    output_tokens = output_tokens[:, input_length:]
+    text_output = tokenizer.decode(output_tokens[0], skip_special_tokens=True)
+    return text_output
 
+
+def chat_tab():
     with gr.Column():
         with gr.Row():
             (
