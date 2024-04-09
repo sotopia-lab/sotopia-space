@@ -1,15 +1,20 @@
-import gradio as gr
-from dataclasses import dataclass
 import os
+from dataclasses import dataclass
+from uuid import uuid4
+
+import gradio as gr
 import torch
 import transformers
-from uuid import uuid4
-from peft import PeftModel, PeftConfig
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+from peft import PeftConfig, PeftModel
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    BitsAndBytesConfig,
+)
 
-from utils import Agent, get_starter_prompt, format_sotopia_prompt
+from utils import Agent, format_sotopia_prompt, get_starter_prompt
 
-DEPLOYED = os.getenv("DEPLOYED", "true").lower() == "true" 
+DEPLOYED = os.getenv("DEPLOYED", "true").lower() == "true"
 
 
 def prepare_sotopia_info():
@@ -18,20 +23,22 @@ def prepare_sotopia_info():
         background="Ethan Johnson is a 34-year-old male chef. He/him pronouns. Ethan Johnson is famous for cooking Italian food.",
         goal="Uknown",
         secrets="Uknown",
-        personality="Ethan Johnson, a creative yet somewhat reserved individual, values power and fairness. He likes to analyse situations before deciding.",)
+        personality="Ethan Johnson, a creative yet somewhat reserved individual, values power and fairness. He likes to analyse situations before deciding.",
+    )
 
     machine_agent = Agent(
         name="Benjamin Jackson",
         background="Benjamin Jackson is a 24-year-old male environmental activist. He/him pronouns. Benjamin Jackson is well-known for his impassioned speeches.",
         goal="Figure out why they estranged you recently, and maintain the existing friendship (Extra information: you notice that your friend has been intentionally avoiding you, you would like to figure out why. You value your friendship with the friend and don't want to lose it.)",
         secrets="Descendant of a wealthy oil tycoon, rejects family fortune",
-        personality="Benjamin Jackson, expressive and imaginative, leans towards self-direction and liberty. His decisions aim for societal betterment.",)
+        personality="Benjamin Jackson, expressive and imaginative, leans towards self-direction and liberty. His decisions aim for societal betterment.",
+    )
 
-    scenario = "Conversation between two friends, where one is upset and crying"
+    scenario = (
+        "Conversation between two friends, where one is upset and crying"
+    )
     instructions = get_starter_prompt(machine_agent, human_agent, scenario)
     return human_agent, machine_agent, scenario, instructions
-
-
 
 
 def prepare():
@@ -39,29 +46,35 @@ def prepare():
     compute_type = torch.float16
     config_dict = PeftConfig.from_json_file("peft_config.json")
     config = PeftConfig.from_peft_type(**config_dict)
-    tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
-    model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1").to("cuda")
-    model = PeftModel.from_pretrained(model, model_name, config=config).to("cuda")
+    tokenizer = AutoTokenizer.from_pretrained(
+        "mistralai/Mistral-7B-Instruct-v0.1"
+    )
+    model = AutoModelForCausalLM.from_pretrained(
+        "mistralai/Mistral-7B-Instruct-v0.1"
+    ).to("cuda")
+    model = PeftModel.from_pretrained(model, model_name, config=config).to(
+        "cuda"
+    )
     return model, tokenizer
-
 
 
 def introduction():
     with gr.Column(scale=2):
-        gr.Image("images/sotopia.jpg", elem_id="banner-image", show_label=False)
+        gr.Image(
+            "images/sotopia.jpg", elem_id="banner-image", show_label=False
+        )
     with gr.Column(scale=5):
         gr.Markdown(
             """# Sotopia-Pi Demo
             **Chat with [Sotopia-Pi](https://github.com/sotopia-lab/sotopia-pi), brainstorm ideas, discuss your holiday plans, and more!**
-            
+
             ➡️️ **Intended Use**: this demo is intended to showcase an early finetuning of [sotopia-pi-mistral-7b-BC_SR](https://huggingface.co/cmu-lti/sotopia-pi-mistral-7b-BC_SR)/
-            
+
             ⚠️ **Limitations**: the model can and will produce factually incorrect information, hallucinating facts and actions. As it has not undergone any advanced tuning/alignment, it can produce problematic outputs, especially if prompted to do so. Finally, this demo is limited to a session length of about 1,000 words.
-            
+
             🗄️ **Disclaimer**: User prompts and generated replies from the model may be collected by TII solely for the purpose of enhancing and refining our models. TII will not store any personally identifiable information associated with your inputs. By using this demo, users implicitly agree to these terms.
             """
         )
-
 
 
 def param_accordion(according_visible=True):
@@ -91,8 +104,12 @@ def param_accordion(according_visible=True):
     return temperature, session_id, max_tokens
 
 
-def sotopia_info_accordion(human_agent, machine_agent, scenario, according_visible=True):
-    with gr.Accordion("Sotopia Information", open=False, visible=according_visible):
+def sotopia_info_accordion(
+    human_agent, machine_agent, scenario, according_visible=True
+):
+    with gr.Accordion(
+        "Sotopia Information", open=False, visible=according_visible
+    ):
         with gr.Row():
             with gr.Column():
                 user_name = gr.Textbox(
@@ -150,16 +167,14 @@ def run_chat(
     bot_name: str,
     temperature: float,
     top_p: float,
-    max_tokens: int
+    max_tokens: int,
 ):
     prompt = format_sotopia_prompt(
-        message, 
-        history, 
-        instructions, 
-        user_name, 
-        bot_name
+        message, history, instructions, user_name, bot_name
     )
-    input_tokens = tokenizer(prompt, return_tensors="pt", padding="do_not_pad").input_ids.to("cuda")
+    input_tokens = tokenizer(
+        prompt, return_tensors="pt", padding="do_not_pad"
+    ).input_ids.to("cuda")
     input_length = input_tokens.shape[-1]
     output_tokens = model.generate(
         input_tokens,
@@ -167,16 +182,17 @@ def run_chat(
         top_p=top_p,
         max_length=max_tokens,
         pad_token_id=tokenizer.eos_token_id,
-        num_return_sequences=1
+        num_return_sequences=1,
     )
     output_tokens = output_tokens[:, input_length:]
     text_output = tokenizer.decode(output_tokens[0], skip_special_tokens=True)
     return text_output
 
-  
+
 def chat_tab():
     model, tokenizer = prepare()
     human_agent, machine_agent, scenario, instructions = prepare_sotopia_info()
+
     # history are input output pairs
     def run_chat(
         message: str,
@@ -189,13 +205,11 @@ def chat_tab():
         max_tokens: int,
     ):
         prompt = format_sotopia_prompt(
-            message, 
-            history, 
-            instructions, 
-            user_name, 
-            bot_name
+            message, history, instructions, user_name, bot_name
         )
-        input_tokens = tokenizer(prompt, return_tensors="pt", padding="do_not_pad").input_ids.to("cuda")
+        input_tokens = tokenizer(
+            prompt, return_tensors="pt", padding="do_not_pad"
+        ).input_ids.to("cuda")
         input_length = input_tokens.shape[-1]
         output_tokens = model.generate(
             input_tokens,
@@ -203,19 +217,22 @@ def chat_tab():
             top_p=top_p,
             max_length=max_tokens,
             pad_token_id=tokenizer.eos_token_id,
-            num_return_sequences=1
+            num_return_sequences=1,
         )
         output_tokens = output_tokens[:, input_length:]
-        text_output = tokenizer.decode(output_tokens[0], skip_special_tokens=True)
+        text_output = tokenizer.decode(
+            output_tokens[0], skip_special_tokens=True
+        )
         return text_output
-
 
     with gr.Column():
         with gr.Row():
             temperature, session_id, max_tokens = param_accordion()
-            user_name, bot_name, scenario = sotopia_info_accordion(human_agent, machine_agent, scenario)
+            user_name, bot_name, scenario = sotopia_info_accordion(
+                human_agent, machine_agent, scenario
+            )
             instructions = instructions_accordion(instructions)
-            
+
         with gr.Column():
             with gr.Blocks():
                 gr.ChatInterface(
@@ -226,8 +243,8 @@ def chat_tab():
                         show_label=False,
                         rtl=False,
                         avatar_images=(
-                            "images/profile1.jpg", 
-                            "images/profile2.jpg"
+                            "images/profile1.jpg",
+                            "images/profile2.jpg",
                         ),
                     ),
                     textbox=gr.Textbox(
