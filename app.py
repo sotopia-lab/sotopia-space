@@ -2,47 +2,56 @@ import gradio as gr
 from dataclasses import dataclass
 import os
 import torch
+import transformers
 from uuid import uuid4
 from peft import PeftModel, PeftConfig
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
-from utils import Agent, get_starter_prompt, format_chat_prompt
-
-
-HUMAN_AGENT = Agent(
-    name="Ethan Johnson",
-    background="Ethan Johnson is a 34-year-old male chef. He/him pronouns. Ethan Johnson is famous for cooking Italian food.",
-    goal="Uknown",
-    secrets="Uknown",
-    personality="Ethan Johnson, a creative yet somewhat reserved individual, values power and fairness. He likes to analyse situations before deciding.",)
-
-MACHINE_AGENT = Agent(
-    name="Benjamin Jackson",
-    background="Benjamin Jackson is a 24-year-old male environmental activist. He/him pronouns. Benjamin Jackson is well-known for his impassioned speeches.",
-    goal="Figure out why they estranged you recently, and maintain the existing friendship (Extra information: you notice that your friend has been intentionally avoiding you, you would like to figure out why. You value your friendship with the friend and don't want to lose it.)",
-    secrets="Descendant of a wealthy oil tycoon, rejects family fortune",
-    personality="Benjamin Jackson, expressive and imaginative, leans towards self-direction and liberty. His decisions aim for societal betterment.",)
-
-DEFUALT_INSTRUCTIONS = get_starter_prompt(MACHINE_AGENT, HUMAN_AGENT, "Conversation between two friends, where one is upset and crying")
+from utils import Agent, get_starter_prompt, format_sotopia_prompt
 
 DEPLOYED = os.getenv("DEPLOYED", "true").lower() == "true" 
-MODEL_NAME = "cmu-lti/sotopia-pi-mistral-7b-BC_SR"
-COMPUTE_DTYPE = torch.float16
 
-config_dict = PeftConfig.from_json_file("peft_config.json")
-# import pdb; pdb.set_trace()
-config = PeftConfig.from_peft_type(**config_dict)
-tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
-model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
-model = PeftModel.from_pretrained(model, MODEL_NAME, config=config).to(COMPUTE_DTYPE).to("cuda")
-according_visible = True
+
+def prepare_sotopia_info():
+    human_agent = Agent(
+        name="Ethan Johnson",
+        background="Ethan Johnson is a 34-year-old male chef. He/him pronouns. Ethan Johnson is famous for cooking Italian food.",
+        goal="Uknown",
+        secrets="Uknown",
+        personality="Ethan Johnson, a creative yet somewhat reserved individual, values power and fairness. He likes to analyse situations before deciding.",)
+
+    machine_agent = Agent(
+        name="Benjamin Jackson",
+        background="Benjamin Jackson is a 24-year-old male environmental activist. He/him pronouns. Benjamin Jackson is well-known for his impassioned speeches.",
+        goal="Figure out why they estranged you recently, and maintain the existing friendship (Extra information: you notice that your friend has been intentionally avoiding you, you would like to figure out why. You value your friendship with the friend and don't want to lose it.)",
+        secrets="Descendant of a wealthy oil tycoon, rejects family fortune",
+        personality="Benjamin Jackson, expressive and imaginative, leans towards self-direction and liberty. His decisions aim for societal betterment.",)
+
+    scenario = "Conversation between two friends, where one is upset and crying"
+    instructions = get_starter_prompt(machine_agent, human_agent, scenario)
+    return human_agent, machine_agent, scenario, instructions
+
+
+
+
+def prepare():
+    model_name = "cmu-lti/sotopia-pi-mistral-7b-BC_SR"
+    compute_type = torch.float16
+    config_dict = PeftConfig.from_json_file("peft_config.json")
+    config = PeftConfig.from_peft_type(**config_dict)
+    tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
+    model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1").to("cuda")
+    model = PeftModel.from_pretrained(model, model_name, config=config).to("cuda")
+    return model, tokenizer
+
+
 
 def introduction():
     with gr.Column(scale=2):
         gr.Image("images/sotopia.jpeg", elem_id="banner-image", show_label=False)
     with gr.Column(scale=5):
         gr.Markdown(
-            """# Sotopia-Pi Demo
+            """# Sotopia-Pi Demo Test
             **Chat with [Sotopia-Pi](https://github.com/sotopia-lab/sotopia-pi), brainstorm ideas, discuss your holiday plans, and more!**
             
             ➡️️ **Intended Use**: this demo is intended to showcase an early finetuning of [sotopia-pi-mistral-7b-BC_SR](https://huggingface.co/cmu-lti/sotopia-pi-mistral-7b-BC_SR)/
@@ -53,7 +62,10 @@ def introduction():
             """
         )
 
-def chat_accordion():
+
+
+def param_accordion(according_visible=True):
+
     with gr.Accordion("Parameters", open=False, visible=according_visible):
         temperature = gr.Slider(
             minimum=0.1,
@@ -63,7 +75,6 @@ def chat_accordion():
             interactive=True,
             label="Temperature",
         )
-        
         max_tokens = gr.Slider(
             minimum=1024,
             maximum=4096,
@@ -72,29 +83,22 @@ def chat_accordion():
             interactive=True,
             label="Max Tokens",
         )
-
         session_id = gr.Textbox(
             value=uuid4,
             interactive=False,
             visible=False,
         )
+    return temperature, session_id, max_tokens
 
-    with gr.Accordion("Instructions", open=False, visible=False):
-        instructions = gr.Textbox(
-            placeholder="The Instructions",
-            value=DEFUALT_INSTRUCTIONS,
-            lines=16,
-            interactive=True,
-            label="Instructions",
-            max_lines=16,
-            show_label=False,
-        )
+
+def sotopia_info_accordion(human_agent, machine_agent, scenario, according_visible=True):
+    with gr.Accordion("Instructions", open=False, visible=according_visible):
         with gr.Row():
             with gr.Column():
                 user_name = gr.Textbox(
                     lines=1,
                     label="username",
-                    value=HUMAN_AGENT.name,
+                    value=human_agent,
                     interactive=True,
                     placeholder="Username: ",
                     show_label=False,
@@ -103,18 +107,77 @@ def chat_accordion():
             with gr.Column():
                 bot_name = gr.Textbox(
                     lines=1,
-                    value=MACHINE_AGENT.name,
+                    value=machine_agent,
                     interactive=True,
                     placeholder="Bot Name",
                     show_label=False,
                     max_lines=1,
                     visible=False,
                 )
+            with gr.Column():
+                scenario = gr.Textbox(
+                    lines=4,
+                    value=scenario,
+                    interactive=False,
+                    placeholder="Scenario",
+                    show_label=False,
+                    max_lines=4,
+                    visible=False,
+                )
+    return user_name, bot_name, scenario
 
-    return temperature, instructions, user_name, bot_name, session_id, max_tokens
+
+def instructions_accordion(instructions, according_visible=False):
+    with gr.Accordion("Instructions", open=False, visible=according_visible):
+        instructions = gr.Textbox(
+            lines=10,
+            value=instructions,
+            interactive=False,
+            placeholder="Instructions",
+            show_label=False,
+            max_lines=10,
+            visible=False,
+        )
+    return instructions
 
 
+# history are input output pairs
+def run_chat(
+    message: str,
+    history,
+    instructions: str,
+    user_name: str,
+    bot_name: str,
+    temperature: float,
+    top_p: float,
+    max_tokens: int
+):
+    prompt = format_sotopia_prompt(
+        message, 
+        history, 
+        instructions, 
+        user_name, 
+        bot_name
+    )
+    input_tokens = tokenizer(prompt, return_tensors="pt", padding="do_not_pad").input_ids.to("cuda")
+    input_length = input_tokens.shape[-1]
+    output_tokens = model.generate(
+        input_tokens,
+        temperature=temperature,
+        top_p=top_p,
+        max_length=max_tokens,
+        pad_token_id=tokenizer.eos_token_id,
+        num_return_sequences=1
+    )
+    output_tokens = output_tokens[:, input_length:]
+    text_output = tokenizer.decode(output_tokens[0], skip_special_tokens=True)
+    return text_output
+
+  
 def chat_tab():
+    model, tokenizer = prepare()
+    human_agent, machine_agent, scenario, instructions = prepare_sotopia_info()
+    # history are input output pairs
     def run_chat(
         message: str,
         history,
@@ -123,11 +186,18 @@ def chat_tab():
         bot_name: str,
         temperature: float,
         top_p: float,
-        max_tokens: int
+        max_tokens: int,
     ):
-        prompt = format_chat_prompt(message, history, instructions, user_name, bot_name)
+        prompt = format_sotopia_prompt(
+            message, 
+            history, 
+            instructions, 
+            user_name, 
+            bot_name
+        )
         input_tokens = tokenizer(prompt, return_tensors="pt", padding="do_not_pad").input_ids.to("cuda")
-        output = model.generate(
+        input_length = input_tokens.shape[-1]
+        output_tokens = model.generate(
             input_tokens,
             temperature=temperature,
             top_p=top_p,
@@ -135,20 +205,17 @@ def chat_tab():
             pad_token_id=tokenizer.eos_token_id,
             num_return_sequences=1
         )
-        # import pdb; pdb.set_trace()
-        return tokenizer.decode(output[0], skip_special_tokens=True)
+        output_tokens = output_tokens[:, input_length:]
+        text_output = tokenizer.decode(output_tokens[0], skip_special_tokens=True)
+        return text_output
+
 
     with gr.Column():
         with gr.Row():
-            (
-                temperature,
-                instructions,
-                user_name,
-                bot_name,
-                session_id,
-                max_tokens
-            ) = chat_accordion()
-
+            temperature, session_id, max_tokens = param_accordion()
+            user_name, bot_name, scenario = sotopia_info_accordion(human_agent, machine_agent, scenario)
+            instructions = instructions_accordion(instructions)
+            
         with gr.Column():
             with gr.Blocks():
                 gr.ChatInterface(
@@ -158,7 +225,10 @@ def chat_tab():
                         render=False,
                         show_label=False,
                         rtl=False,
-                        avatar_images=("images/user_icon.png", "images/bot_icon.png"),
+                        avatar_images=(
+                            "images/user_icon.png", 
+                            "images/bot_icon.png"
+                        ),
                     ),
                     textbox=gr.Textbox(
                         placeholder="Write your message here...",
@@ -172,7 +242,7 @@ def chat_tab():
                         bot_name,
                         temperature,
                         session_id,
-                        max_tokens
+                        max_tokens,
                     ],
                     submit_btn="Send",
                     stop_btn="Stop",
@@ -180,7 +250,6 @@ def chat_tab():
                     undo_btn="↩️ Delete",
                     clear_btn="🗑️ Clear",
                 )
-
 
 
 def main():
