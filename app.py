@@ -51,7 +51,7 @@ def introduction():
         gr.Image("images/sotopia.png", elem_id="banner-image", show_label=False)
     with gr.Column(scale=5):
         gr.Markdown(
-            """# Sotopia-Pi Demo Test
+            """# Sotopia-Pi Demo
             **Chat with [Sotopia-Pi](https://github.com/sotopia-lab/sotopia-pi), brainstorm ideas, discuss your holiday plans, and more!**
             
             ➡️️ **Intended Use**: this demo is intended to showcase an early finetuning of [sotopia-pi-mistral-7b-BC_SR](https://huggingface.co/cmu-lti/sotopia-pi-mistral-7b-BC_SR)/
