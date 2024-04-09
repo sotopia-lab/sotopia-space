@@ -100,7 +100,7 @@ def sotopia_info_accordion(human_agent, machine_agent, scenario, according_visib
                     label="username",
                     value=human_agent.name,
                     interactive=True,
-                    placeholder="Username: ",
+                    placeholder=f"{human_agent.name}: ",
                     show_label=False,
                     max_lines=1,
                 )
@@ -109,7 +109,7 @@ def sotopia_info_accordion(human_agent, machine_agent, scenario, according_visib
                     lines=1,
                     value=machine_agent.name,
                     interactive=True,
-                    placeholder="Bot Name",
+                    placeholder=f"{bot_agent.name}: ",
                     show_label=False,
                     max_lines=1,
                     visible=False,
