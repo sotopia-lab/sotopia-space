@@ -2,11 +2,12 @@ import gradio as gr
 from dataclasses import dataclass
 import os
 import torch
+import transformers
 from uuid import uuid4
 from peft import PeftModel, PeftConfig
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
-from utils import Agent, get_starter_prompt, format_chat_prompt
+from utils import Agent, get_starter_prompt, format_sotopia_prompt
 
 
 HUMAN_AGENT = Agent(
@@ -23,18 +24,23 @@ MACHINE_AGENT = Agent(
     secrets="Descendant of a wealthy oil tycoon, rejects family fortune",
     personality="Benjamin Jackson, expressive and imaginative, leans towards self-direction and liberty. His decisions aim for societal betterment.",)
 
-DEFUALT_INSTRUCTIONS = get_starter_prompt(MACHINE_AGENT, HUMAN_AGENT, "Conversation between two friends, where one is upset and crying")
+SCENARIO = "Conversation between two friends, where one is upset and crying"
+
+DEFUALT_INSTRUCTIONS = get_starter_prompt(
+    MACHINE_AGENT, 
+    HUMAN_AGENT, 
+    SCENARIO
+)
 
 DEPLOYED = os.getenv("DEPLOYED", "true").lower() == "true" 
 MODEL_NAME = "cmu-lti/sotopia-pi-mistral-7b-BC_SR"
 COMPUTE_DTYPE = torch.float16
 
 config_dict = PeftConfig.from_json_file("peft_config.json")
-# import pdb; pdb.set_trace()
 config = PeftConfig.from_peft_type(**config_dict)
 tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
-model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
-model = PeftModel.from_pretrained(model, MODEL_NAME, config=config).to(COMPUTE_DTYPE).to("cuda")
+model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1").to("cuda")
+model = PeftModel.from_pretrained(model, MODEL_NAME, config=config).to("cuda")
 according_visible = True
 
 
@@ -109,10 +115,10 @@ def chat_accordion():
                     max_lines=1,
                     visible=False,
                 )
-
     return temperature, instructions, user_name, bot_name, session_id, max_tokens
 
 
+# history are input output pairs
 def run_chat(
     message: str,
     history,
@@ -123,7 +129,13 @@ def run_chat(
     top_p: float,
     max_tokens: int
 ):
-    prompt = format_chat_prompt(message, history, instructions, user_name, bot_name)
+    prompt = format_sotopia_prompt(
+        message, 
+        history, 
+        instructions, 
+        user_name, 
+        bot_name
+    )
     input_tokens = tokenizer(prompt, return_tensors="pt", padding="do_not_pad").input_ids.to("cuda")
     input_length = input_tokens.shape[-1]
     output_tokens = model.generate(
@@ -160,7 +172,10 @@ def chat_tab():
                         render=False,
                         show_label=False,
                         rtl=False,
-                        avatar_images=("images/user_icon.png", "images/bot_icon.png"),
+                        avatar_images=(
+                            "images/user_icon.png", 
+                            "images/bot_icon.png"
+                        ),
                     ),
                     textbox=gr.Textbox(
                         placeholder="Write your message here...",
@@ -182,7 +197,6 @@ def chat_tab():
                     undo_btn="↩️ Delete",
                     clear_btn="🗑️ Clear",
                 )
-
 
 
 def main():
