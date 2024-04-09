@@ -34,22 +34,6 @@ def prepare_sotopia_info():
 
 
 
-'''def prepare(model_name):
-    compute_type = torch.float16
-    config_dict = PeftConfig.from_json_file("peft_config.json")
-    config = PeftConfig.from_peft_type(**config_dict)
-    
-    if 'mistral'in model_name:
-        model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1").to("cuda")
-        tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
-        model = PeftModel.from_pretrained(model, model_name, config=config).to(compute_type).to("cuda")
-    else:
-         tokenizer = AutoTokenizer.from_pretrained(model_name)
-    return model, tokenizer
-'''
-
-
-
 def introduction():
     with gr.Column(scale=2):
         gr.Image("images/sotopia.jpg", elem_id="banner-image", show_label=False)
