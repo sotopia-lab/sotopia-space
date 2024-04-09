@@ -45,6 +45,7 @@ def prepare():
     return model, tokenizer
 
 
+
 def introduction():
     with gr.Column(scale=2):
         gr.Image("images/sotopia.jpeg", elem_id="banner-image", show_label=False)
@@ -62,7 +63,9 @@ def introduction():
         )
 
 
+
 def param_accordion(according_visible=True):
+
     with gr.Accordion("Parameters", open=False, visible=according_visible):
         temperature = gr.Slider(
             minimum=0.1,
@@ -138,6 +141,39 @@ def instructions_accordion(instructions, according_visible=False):
     return instructions
 
 
+# history are input output pairs
+def run_chat(
+    message: str,
+    history,
+    instructions: str,
+    user_name: str,
+    bot_name: str,
+    temperature: float,
+    top_p: float,
+    max_tokens: int
+):
+    prompt = format_sotopia_prompt(
+        message, 
+        history, 
+        instructions, 
+        user_name, 
+        bot_name
+    )
+    input_tokens = tokenizer(prompt, return_tensors="pt", padding="do_not_pad").input_ids.to("cuda")
+    input_length = input_tokens.shape[-1]
+    output_tokens = model.generate(
+        input_tokens,
+        temperature=temperature,
+        top_p=top_p,
+        max_length=max_tokens,
+        pad_token_id=tokenizer.eos_token_id,
+        num_return_sequences=1
+    )
+    output_tokens = output_tokens[:, input_length:]
+    text_output = tokenizer.decode(output_tokens[0], skip_special_tokens=True)
+    return text_output
+
+  
 def chat_tab():
     model, tokenizer = prepare()
     human_agent, machine_agent, scenario, instructions = prepare_sotopia_info()
