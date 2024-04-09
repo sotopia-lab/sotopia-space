@@ -43,8 +43,9 @@ def prepare(model_name):
         model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1").to("cuda")
         tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
         model = PeftModel.from_pretrained(model, model_name, config=config).to(compute_type).to("cuda")
-    else:
-         tokenizer = AutoTokenizer.from_pretrained(model_name)
+    elif 'GPT3.5'in model_name:
+        model
+        tokenizer= None
     return model, tokenizer
 
 
@@ -71,8 +72,8 @@ def introduction():
 def param_accordion(according_visible=True):
     with gr.Accordion("Parameters", open=False, visible=according_visible):
         model_name  = gr.Dropdown(
-            choices=["cmu-lti/sotopia-pi-mistral-7b-BC_SR", "Model 2", "Model 3"],  # Example model choices
-            value="Model 1",  # Default value
+            choices=["cmu-lti/sotopia-pi-mistral-7b-BC_SR", "mistralai/Mistral-7B-Instruct-v0.1", "GPT3.5"],  # Example model choices
+            value="cmu-lti/sotopia-pi-mistral-7b-BC_SR",  # Default value
             interactive=True,
             label="Model Selection",
         )
@@ -171,18 +172,19 @@ def run_chat(
         user_name, 
         bot_name
     )
-    input_tokens = tokenizer(prompt, return_tensors="pt", padding="do_not_pad").input_ids.to("cuda")
-    input_length = input_tokens.shape[-1]
-    output_tokens = model.generate(
-        input_tokens,
-        temperature=temperature,
-        top_p=top_p,
-        max_length=max_tokens,
-        pad_token_id=tokenizer.eos_token_id,
-        num_return_sequences=1
-    )
-    output_tokens = output_tokens[:, input_length:]
-    text_output = tokenizer.decode(output_tokens[0], skip_special_tokens=True)
+    if 'GPT3.5' not in model_selection:
+        input_tokens = tokenizer(prompt, return_tensors="pt", padding="do_not_pad").input_ids.to("cuda")
+        input_length = input_tokens.shape[-1]
+        output_tokens = model.generate(
+            input_tokens,
+            temperature=temperature,
+            top_p=top_p,
+            max_length=max_tokens,
+            pad_token_id=tokenizer.eos_token_id,
+            num_return_sequences=1
+        )
+        output_tokens = output_tokens[:, input_length:]
+        text_output = tokenizer.decode(output_tokens[0], skip_special_tokens=True)
     return text_output
 
   
