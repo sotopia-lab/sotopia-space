@@ -70,7 +70,7 @@ def introduction():
 
 def param_accordion(according_visible=True):
     with gr.Accordion("Parameters", open=False, visible=according_visible):
-        model = gr.Dropdown(
+        model_name  = gr.Dropdown(
             choices=["cmu-lti/sotopia-pi-mistral-7b-BC_SR", "Model 2", "Model 3"],  # Example model choices
             value="Model 1",  # Default value
             interactive=True,
@@ -98,7 +98,7 @@ def param_accordion(according_visible=True):
             visible=False,
             label="Session ID",
         )
-    return temperature, session_id, max_tokens,model
+    return temperature, session_id, max_tokens, model_name 
 
 
 def sotopia_info_accordion(human_agent, machine_agent, scenario, according_visible=True):
@@ -201,7 +201,6 @@ def chat_tab():
         max_tokens: int,
         model_selection:str
     ):
-        print(model_selection)
         model, tokenizer = prepare(model_selection)
         prompt = format_sotopia_prompt(
             message, 
@@ -227,7 +226,7 @@ def chat_tab():
 
     with gr.Column():
         with gr.Row():
-            temperature, session_id, max_tokens,model = param_accordion()
+            temperature, session_id, max_tokens, model = param_accordion()
             user_name, bot_name, scenario = sotopia_info_accordion(human_agent, machine_agent, scenario)
             instructions = instructions_accordion(instructions)
             
