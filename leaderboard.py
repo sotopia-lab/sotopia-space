@@ -15,15 +15,18 @@ data = {
 df = pd.DataFrame(data)
 
 # Create a Gradio interface to display the DataFrame as a table
-def show_table(dummy_input):
+def show_table():
     return df
 
 iface = gr.Interface(
     fn=show_table,
-    inputs=gr.components.Button(label="Show Leaderboard"),
+    inputs=[],  # Specify an empty list for inputs as there are none
     outputs="dataframe",
     title="Leaderboard",
-    description="sample-table"
+    description="WildBench (v1.01; 2024.03.27) | Examples: 1024 | Models: 22 | Comparisons: 26k\n\nTask-Avg Elo: Compute Elo on subsets of each task type and then take their avg. | Win Rates: Estimated by Elo differences. | Length penalty: Models w/ longer outputs are penalized. (Please check Details.)",
+    show_submit_button=False,  # Hide the Submit button
+    live=True  # The interface updates the output upon loading
 )
+
 
 iface.launch()
