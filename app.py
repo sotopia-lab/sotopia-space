@@ -48,10 +48,10 @@ def prepare():
 
 def introduction():
     with gr.Column(scale=2):
-        gr.Image("images/sotopia.jpeg", elem_id="banner-image", show_label=False)
+        gr.Image("images/sotopia.png", elem_id="banner-image", show_label=False)
     with gr.Column(scale=5):
         gr.Markdown(
-            """# Sotopia-Pi Demo Test
+            """# Sotopia-Pi Demo
             **Chat with [Sotopia-Pi](https://github.com/sotopia-lab/sotopia-pi), brainstorm ideas, discuss your holiday plans, and more!**
             
             ➡️️ **Intended Use**: this demo is intended to showcase an early finetuning of [sotopia-pi-mistral-7b-BC_SR](https://huggingface.co/cmu-lti/sotopia-pi-mistral-7b-BC_SR)/
@@ -100,7 +100,7 @@ def sotopia_info_accordion(human_agent, machine_agent, scenario, according_visib
                     label="username",
                     value=human_agent.name,
                     interactive=True,
-                    placeholder="Username: ",
+                    placeholder=f"{human_agent.name}: ",
                     show_label=False,
                     max_lines=1,
                 )
@@ -109,7 +109,7 @@ def sotopia_info_accordion(human_agent, machine_agent, scenario, according_visib
                     lines=1,
                     value=machine_agent.name,
                     interactive=True,
-                    placeholder="Bot Name",
+                    placeholder=f"{bot_agent.name}: ",
                     show_label=False,
                     max_lines=1,
                     visible=False,
@@ -226,8 +226,8 @@ def chat_tab():
                         show_label=False,
                         rtl=False,
                         avatar_images=(
-                            "images/user_icon.png", 
-                            "images/bot_icon.png"
+                            "images/profile1.png", 
+                            "images/profile2.png"
                         ),
                     ),
                     textbox=gr.Textbox(
