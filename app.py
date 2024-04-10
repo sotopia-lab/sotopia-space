@@ -41,22 +41,29 @@ def prepare_sotopia_info():
     return human_agent, machine_agent, scenario, instructions
 
 
-
-
-
 def prepare(model_name):
     compute_type = torch.float16
     config_dict = PeftConfig.from_json_file("peft_config.json")
     config = PeftConfig.from_peft_type(**config_dict)
     
     if 'mistral'in model_name:
-        model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1").to("cuda")
+        # model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1").to("cuda")
+        model = AutoModelForCausalLM.from_pretrained(
+        "mistralai/Mistral-7B-Instruct-v0.1",
+        cache_dir="./.cache",
+        device_map='cuda',
+        quantization_config=BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.float16,
+            )
+        )
         tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
         model = PeftModel.from_pretrained(model, model_name, config=config).to(compute_type).to("cuda")
     else:
          tokenizer = AutoTokenizer.from_pretrained(model_name)
     return model, tokenizer
-
 
 
 def introduction():
