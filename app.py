@@ -5,7 +5,7 @@ from uuid import uuid4
 import gradio as gr
 import torch
 import transformers
-from peft import PeftConfig, PeftModel
+from peft import PeftConfig, PeftModel, get_peft_model
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -13,9 +13,10 @@ from transformers import (
 )
 
 from utils import Agent, format_sotopia_prompt, get_starter_prompt
+from functools import cache
 
 DEPLOYED = os.getenv("DEPLOYED", "true").lower() == "true"
-
+DEFAULT_MODEL_SELECTION = "cmu-lti/sotopia-pi-mistral-7b-BC_SR"
 
 def prepare_sotopia_info():
     human_agent = Agent(
@@ -40,23 +41,27 @@ def prepare_sotopia_info():
     instructions = get_starter_prompt(machine_agent, human_agent, scenario)
     return human_agent, machine_agent, scenario, instructions
 
-
-
-
-
+@cache
 def prepare(model_name):
     compute_type = torch.float16
-    config_dict = PeftConfig.from_json_file("peft_config.json")
-    config = PeftConfig.from_peft_type(**config_dict)
     
-    if 'mistral'in model_name:
-        model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1").to("cuda")
+    if 'cmu-lti/sotopia-pi-mistral-7b-BC_SR'in model_name:
+        model = AutoModelForCausalLM.from_pretrained(
+        "mistralai/Mistral-7B-Instruct-v0.1",
+        cache_dir="./.cache",
+        device_map='cuda',
+        quantization_config=BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=compute_type,
+            )
+        )
         tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
-        model = PeftModel.from_pretrained(model, model_name, config=config).to(compute_type).to("cuda")
+        model = PeftModel.from_pretrained(model, "./sotopia_pi_adapter").to("cuda")
     else:
-         tokenizer = AutoTokenizer.from_pretrained(model_name)
+         raise RuntimeError(f"Model {model_name} not supported")
     return model, tokenizer
-
 
 
 def introduction():
@@ -163,40 +168,6 @@ def instructions_accordion(instructions, according_visible=False):
             visible=False,
         )
     return instructions
-
-
-# history are input output pairs
-def run_chat(
-    message: str,
-    history,
-    instructions: str,
-    user_name: str,
-    bot_name: str,
-    temperature: float,
-    top_p: float,
-    max_tokens: int,
-    model_selection:str
-
-):
-    model, tokenizer = prepare(model_selection)
-    prompt = format_sotopia_prompt(
-        message, history, instructions, user_name, bot_name
-    )
-    input_tokens = tokenizer(
-        prompt, return_tensors="pt", padding="do_not_pad"
-    ).input_ids.to("cuda")
-    input_length = input_tokens.shape[-1]
-    output_tokens = model.generate(
-        input_tokens,
-        temperature=temperature,
-        top_p=top_p,
-        max_length=max_tokens,
-        pad_token_id=tokenizer.eos_token_id,
-        num_return_sequences=1,
-    )
-    output_tokens = output_tokens[:, input_length:]
-    text_output = tokenizer.decode(output_tokens[0], skip_special_tokens=True)
-    return text_output
 
 
 def chat_tab():
@@ -307,4 +278,5 @@ def start_demo():
 
 
 if __name__ == "__main__":
+    prepare(DEFAULT_MODEL_SELECTION)
     start_demo()
