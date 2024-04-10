@@ -58,7 +58,7 @@ def prepare(model_name):
             )
         )
         tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
-        model = PeftModel.from_pretrained(model, "./sotopia_pi_adapter").to("cuda")
+        model = PeftModel.from_pretrained(model, model_name).to("cuda")
     else:
          raise RuntimeError(f"Model {model_name} not supported")
     return model, tokenizer
