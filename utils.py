@@ -1,6 +1,5 @@
 from typing import List, Tuple
 
-
 class Agent:
     def __init__(self, name, background, goal, secrets, personality):
         self.name = name
@@ -68,6 +67,7 @@ def format_sotopia_prompt(
     bot_name: str,
     include_all_chat_history: bool = True,
     index: int = 1,
+    use_format_guide: bool = True,
 ) -> str:
     prompt = instructions.strip()
     dialogue_history, last_turn_idx = dialogue_history_creation(
