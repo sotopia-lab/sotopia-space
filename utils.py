@@ -1,5 +1,15 @@
 from typing import List, Tuple
 
+FORMAT_TEMPLATE = """ Your available action types are
+"none action speak non-verbal communication leave".
+Note: You can "leave" this conversation if 1. you have achieved your social goals, 2. this conversation makes you uncomfortable, 3. you find it uninteresting/you lose your patience, 4. or for other reasons you want to leave.
+
+Please only generate a JSON string including the action type and the argument.
+Your action should follow the given format:
+\nAs an example, for the schema {\"properties\": {\"foo\": {\"title\": \"Foo\", \"description\": \"a list of strings\", \"type\": \"array\", \"items\": {\"type\": \"string\"}}}, \"required\": [\"foo\"]}
+the object {\"foo\": [\"bar\", \"baz\"]} is a well-formatted instance of the schema. The object {\"properties\": {\"foo\": [\"bar\", \"baz\"]}} is not well-formatted.
+\nHere is the output schema:\n```\n{\"description\": \"An interface for messages.\\nThere is only one required method: to_natural_language\", \"properties\": {\"action_type\": {\"title\": \"Action Type\", \"description\": \"whether to speak at this turn or choose to not do anything\", \"enum\": [\"none\", \"speak\", \"non-verbal communication\", \"action\", \"leave\"], \"type\": \"string\"}, \"argument\": {\"title\": \"Argument\", \"description\": \"the utterance if choose to speak, the expression or gesture if choose non-verbal communication, or the physical action if choose action\", \"type\": \"string\"}}, \"required\": [\"action_type\", \"argument\"]}\n```\u001b[0m
+"""
 
 class Agent:
     def __init__(self, name, background, goal, secrets, personality):
@@ -68,6 +78,7 @@ def format_sotopia_prompt(
     bot_name: str,
     include_all_chat_history: bool = True,
     index: int = 1,
+    use_format_guide: bool = True,
 ) -> str:
     prompt = instructions.strip()
     dialogue_history, last_turn_idx = dialogue_history_creation(
@@ -75,4 +86,4 @@ def format_sotopia_prompt(
     )
     prompt = f"{prompt}\n{dialogue_history}"
     prompt = f"{prompt}\n\nTurn #{last_turn_idx+1}: {user_name}: {message}\n.\nYou are at Turn #{last_turn_idx+2}."
-    return prompt
+    return prompt + FORMAT_TEMPLATE if use_format_guide else prompt

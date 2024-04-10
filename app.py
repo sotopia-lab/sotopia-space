@@ -5,7 +5,7 @@ from uuid import uuid4
 import gradio as gr
 import torch
 import transformers
-from peft import PeftConfig, PeftModel
+from peft import PeftConfig, PeftModel, get_peft_model
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -13,9 +13,10 @@ from transformers import (
 )
 
 from utils import Agent, format_sotopia_prompt, get_starter_prompt
+from functools import lru_cache
 
 DEPLOYED = os.getenv("DEPLOYED", "true").lower() == "true"
-
+DEFAULT_MODEL_SELECTION = "sotopia-pi"
 
 def prepare_sotopia_info():
     human_agent = Agent(
@@ -40,13 +41,14 @@ def prepare_sotopia_info():
     instructions = get_starter_prompt(machine_agent, human_agent, scenario)
     return human_agent, machine_agent, scenario, instructions
 
-
+@lru_cache
 def prepare(model_name):
     compute_type = torch.float16
-    config_dict = PeftConfig.from_json_file("peft_config.json")
-    config = PeftConfig.from_peft_type(**config_dict)
+    # config_dict = PeftConfig.from_json_file("peft_config.json")
+    # config = PeftConfig.from_peft_type(**config_dict)
+    # import pdb; pdb.set_trace()
     
-    if 'mistral'in model_name:
+    if 'sotopia-pi'in model_name:
         # model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1").to("cuda")
         model = AutoModelForCausalLM.from_pretrained(
         "mistralai/Mistral-7B-Instruct-v0.1",
@@ -56,13 +58,14 @@ def prepare(model_name):
             load_in_4bit=True,
             bnb_4bit_use_double_quant=True,
             bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=torch.float16,
+            bnb_4bit_compute_dtype=compute_type,
             )
         )
         tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
-        model = PeftModel.from_pretrained(model, model_name, config=config).to(compute_type).to("cuda")
+        model = PeftModel.from_pretrained(model, "./sotopia_pi_adapter").to("cuda")
+        # model = get_peft_model(model, config).to("cuda")
     else:
-         tokenizer = AutoTokenizer.from_pretrained(model_name)
+         raise RuntimeError(f"Model {model_name} not supported")
     return model, tokenizer
 
 
