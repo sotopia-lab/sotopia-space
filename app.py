@@ -16,7 +16,7 @@ from utils import Agent, format_sotopia_prompt, get_starter_prompt, format_bot_m
 from functools import cache
 
 DEPLOYED = os.getenv("DEPLOYED", "true").lower() == "true"
-DEFAULT_MODEL_SELECTION = "cmu-lti/sotopia-pi-mistral-7b-BC_SR"
+DEFAULT_MODEL_SELECTION = "cmu-lti/sotopia-pi-mistral-7b-BC_SR" # "mistralai/Mistral-7B-Instruct-v0.1"
 
 def prepare_sotopia_info():
     human_agent = Agent(
@@ -59,6 +59,13 @@ def prepare(model_name):
         )
         tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
         model = PeftModel.from_pretrained(model, model_name).to("cuda")
+    elif 'mistralai/Mistral-7B-Instruct-v0.1' in model_name:
+        model = AutoModelForCausalLM.from_pretrained(
+        "mistralai/Mistral-7B-Instruct-v0.1",
+        cache_dir="./.cache",
+        device_map='cuda',
+        )
+        tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
     else:
          raise RuntimeError(f"Model {model_name} not supported")
     return model, tokenizer
@@ -107,13 +114,15 @@ def param_accordion(according_visible=True):
             interactive=True,
             label="Max Tokens",
         )
-        session_id = gr.Textbox(
-            value=uuid4,
-            interactive=False,
-            visible=False,
-            label="Session ID",
+        top_p = gr.Slider(
+            minimum=1,
+            maximum=3,
+            value=1,
+            interactive=True,
+            visible=True,
+            label="Top p",
         )
-    return temperature, session_id, max_tokens, model_name 
+    return temperature, top_p, max_tokens, model_name
 
 
 def sotopia_info_accordion(human_agent, machine_agent, scenario, accordion_visible=True):
@@ -192,11 +201,20 @@ def chat_tab():
         text_output = tokenizer.decode(
             output_tokens[0], skip_special_tokens=True
         )
-        return format_bot_message(text_output)
+        # import pdb; pdb.set_trace()
+        output = ""
+        for _ in range(5):
+            try:
+                output = format_bot_message(text_output)
+                break
+            except Exception as e:
+                print(e)
+                print("Retrying...")
+        return output
 
     with gr.Column():
         with gr.Row():
-            temperature, session_id, max_tokens, model = param_accordion()
+            temperature, top_p, max_tokens, model = param_accordion()
             user_name, bot_name, scenario = sotopia_info_accordion(human_agent, machine_agent, scenario)
 
             instructions = instructions_accordion(instructions)
@@ -226,7 +244,7 @@ def chat_tab():
                         user_name,
                         bot_name,
                         temperature,
-                        session_id,
+                        top_p,
                         max_tokens,
                         model,
                     ],
