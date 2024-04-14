@@ -1,5 +1,6 @@
 from typing import List, Tuple
 import ast
+import re
 
 FORMAT_TEMPLATE = """ Your available action types are
 "none action speak non-verbal communication leave".
@@ -49,7 +50,12 @@ def truncate_dialogue_history_to_length(dia_his, surpass_num, tokenizer):
 
 
 def format_bot_message(bot_message) -> str:
-    json_response = ast.literal_eval(bot_message)
+    # import pdb; pdb.set_trace()
+    start_idx, end_idx = bot_message.index("{"), bot_message.index("}")
+    if end_idx == -1:
+        bot_message += "'}"
+        end_idx = len(bot_message)
+    json_response = ast.literal_eval(bot_message[start_idx:end_idx+1])
     match json_response["action_type"]:
         case "none":
             return 'did nothing'
