@@ -17,6 +17,9 @@ from functools import cache
 
 DEPLOYED = os.getenv("DEPLOYED", "true").lower() == "true"
 DEFAULT_MODEL_SELECTION = "cmu-lti/sotopia-pi-mistral-7b-BC_SR" # "mistralai/Mistral-7B-Instruct-v0.1"
+TEMPERATURE = 0.0
+TOP_P = 1
+MAX_TOKENS = 1024
 
 def prepare_sotopia_info():
     human_agent = Agent(
@@ -90,66 +93,55 @@ def introduction():
         )
 
 
-def param_accordion(according_visible=True):
-    with gr.Accordion("Parameters", open=True, visible=according_visible):
-        model_name  = gr.Dropdown(
-            choices=["cmu-lti/sotopia-pi-mistral-7b-BC_SR", "mistralai/Mistral-7B-Instruct-v0.1", "GPT3.5"],  # Example model choices
-            value="cmu-lti/sotopia-pi-mistral-7b-BC_SR",  # Default value
-            interactive=True,
-            label="Model Selection",
-        )
-        temperature = gr.Slider(
-            minimum=0.1,
-            maximum=1.0,
-            value=0.7,
-            step=0.1,
-            interactive=True,
-            label="Temperature",
-        )
-        max_tokens = gr.Slider(
-            minimum=1024,
-            maximum=4096,
-            value=1024,
-            step=1,
-            interactive=True,
-            label="Max Tokens",
-        )
-        top_p = gr.Slider(
-            minimum=1,
-            maximum=3,
-            value=1,
-            interactive=True,
-            visible=True,
-            label="Top p",
-        )
-    return temperature, top_p, max_tokens, model_name
 
+def update_user_names(scenario, *args):
+    # Placeholder logic to get user names based on the scenario
+    user_names = {
+        "Scenario 1": ["Alice", "Bob"],
+        "Scenario 2": ["Charlie", "Diana"],
+    }
+    return user_names.get(scenario, [])
 
-def sotopia_info_accordion(human_agent, machine_agent, scenario, accordion_visible=True):
+def update_bot_names(user_name, scenario, *args):
+    # Placeholder logic to get bot names based on user name and scenario
+    bot_names = {
+        ("Alice", "Scenario 1"): ["Bot-A1", "Bot-A2"],
+        ("Bob", "Scenario 1"): ["Bot-B1", "Bot-B2"],
+        ("Charlie", "Scenario 2"): ["Bot-C1", "Bot-C2"],
+    }
+    return bot_names.get((user_name, scenario), [])
+
+def display_info(scenario, user_name, bot_name):
+    # Display additional information based on the current selection
+    return f"Info about {scenario}, {user_name}, and {bot_name}"
+
+def sotopia_info_accordion(accordion_visible=True):
     with gr.Accordion("Sotopia Information", open=accordion_visible):
-        with gr.Row():
-            user_name = gr.Textbox(
-                lines=1,
-                label="Human Agent Name",
-                value=human_agent.name,
-                interactive=True,
-                placeholder="Enter human agent name",
-            )
-            bot_name = gr.Textbox(
-                lines=1,
-                label="Machine Agent Name",
-                value=machine_agent.name,
-                interactive=True,
-                placeholder="Enter machine agent name",
-            )
-            scenario_textbox = gr.Textbox(
-                lines=4,
-                label="Scenario Description",
-                value=scenario,
-                interactive=True,
-                placeholder="Enter scenario description",
-            )
-    return user_name, bot_name, scenario_textbox
+        with gr.Column():
+            with gr.Row():
+                model_name  = gr.Dropdown(
+                    choices=["cmu-lti/sotopia-pi-mistral-7b-BC_SR", "mistralai/Mistral-7B-Instruct-v0.1", "GPT3.5"],  # Example model choices
+                    value="cmu-lti/sotopia-pi-mistral-7b-BC_SR",  # Default value
+                    interactive=True,
+                    label="Model Selection",
+                )
+                info_display = gr.Textbox(label="Information Display", lines=4)
+                
+            with gr.Row():
+                scenario_dropdown = gr.Dropdown(
+                    choices=["Scenario 1", "Scenario 2"],
+                    label="Scenario Selection",
+                    value="Scenario 1"
+                )
+                user_dropdown = gr.Dropdown(label="Human Agent Name")
+                bot_dropdown = gr.Dropdown(label="Machine Agent Name")
+
+                # Link updates
+                scenario_dropdown.change(update_user_names, inputs=[scenario_dropdown], outputs=[user_dropdown])
+                user_dropdown.change(update_bot_names, inputs=[user_dropdown, scenario_dropdown], outputs=[bot_dropdown])
+                gr.update(change=display_info, inputs=[scenario_dropdown, user_dropdown, bot_dropdown], outputs=[info_display])
+
+    return model_name, scenario_dropdown, user_dropdown, bot_dropdown
 
 def instructions_accordion(instructions, according_visible=False):
     with gr.Accordion("Instructions", open=False, visible=according_visible):
@@ -176,9 +168,6 @@ def chat_tab():
         instructions: str,
         user_name: str,
         bot_name: str,
-        temperature: float,
-        top_p: float,
-        max_tokens: int,
         model_selection:str
     ):
         model, tokenizer = prepare(model_selection)
@@ -191,9 +180,9 @@ def chat_tab():
         input_length = input_tokens.shape[-1]
         output_tokens = model.generate(
             input_tokens,
-            temperature=temperature,
-            top_p=top_p,
-            max_length=max_tokens,
+            temperature=TEMPERATURE,
+            top_p=TOP_P,
+            max_length=MAX_TOKENS,
             pad_token_id=tokenizer.eos_token_id,
             num_return_sequences=1,
         )
@@ -201,7 +190,6 @@ def chat_tab():
         text_output = tokenizer.decode(
             output_tokens[0], skip_special_tokens=True
         )
-        # import pdb; pdb.set_trace()
         output = ""
         for _ in range(5):
             try:
@@ -214,8 +202,7 @@ def chat_tab():
 
     with gr.Column():
         with gr.Row():
-            temperature, top_p, max_tokens, model = param_accordion()
-            user_name, bot_name, scenario = sotopia_info_accordion(human_agent, machine_agent, scenario)
+            model, user_name, bot_name, scenario = sotopia_info_accordion()
 
             instructions = instructions_accordion(instructions)
 
@@ -243,9 +230,6 @@ def chat_tab():
                         instructions,
                         user_name,
                         bot_name,
-                        temperature,
-                        top_p,
-                        max_tokens,
                         model,
                     ],
                     submit_btn="Send",
@@ -282,5 +266,5 @@ def start_demo():
 
 
 if __name__ == "__main__":
-    prepare(DEFAULT_MODEL_SELECTION)
+    # prepare(DEFAULT_MODEL_SELECTION)
     start_demo()
