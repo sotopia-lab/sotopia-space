@@ -2,14 +2,16 @@ from typing import List, Tuple
 import ast
 
 class Agent:
-    def __init__(self, agent_profile, environment_profile):
+    def __init__(self, agent_profile):
+        self._id = agent_profile["agent_id"]
+        
         self.agent_profile = agent_profile
-        self.environment_profile = environment_profile
+        self.agent_id = agent_profile["agent_id"]
         self.name = self.get_name(agent_profile)
         self.background = self.get_background(agent_profile)
-        self.secrets = agent_profile["secrets"]
-        self.personality = agent_profile["agent_profile"]
-        self.goal = environment_profile["agent_goals"]
+        self.secret = agent_profile["secret"]
+        self.personality = agent_profile["personality_and_values"]
+        self.goal = ""
         
     def get_name(self, agent_profile):
         return agent_profile["first_name"] + " " + agent_profile["last_name"]
@@ -18,13 +20,15 @@ class Agent:
         name = self.name
         return f"{name} is a {agent_profile['age']}-year-old {agent_profile['gender']} {agent_profile['occupation']}. {agent_profile['public_info']}"
     
-class Envorinment:
+class Environment:
     
-    def __init__(self, scenario_profile):
-        self.environment_profile = scenario_profile
-        self.scenario = scenario_profile["scenario"]
-        self.agent_goals = scenario_profile["agent_goals"]
-        self.relationship = scenario_profile["relationship"]
+    def __init__(self, env_profile):
+        self._id = env_profile["env_id"]
+        
+        self.environment_profile = env_profile
+        self.scenario = env_profile["scenario"]
+        self.agent_goals = env_profile["agent_goals"]
+        self.relationship = env_profile["relationship"]
         
 def get_format_guide():
     return """ Your available action types are
@@ -39,7 +43,7 @@ def get_format_guide():
     """
 
 def get_starter_prompt(machine_agent, human_agent, environment):
-    return f"Prompt after formatting:\nImagine you are {machine_agent.name}, your task is to act/speak as {machine_agent.name} would, keeping in mind {machine_agent.name}'s social goal.\nYou can find {machine_agent.name}'s background and goal in the 'Here is the context of the interaction' field.\nNote that {machine_agent.name}'s secret and goal is only visible to you.\nYou should try your best to achieve {machine_agent.name}'s goal in a way that align with their character traits.\nAdditionally, maintaining the conversation's naturalness and realism is essential (e.g., do not repeat what other people has already said before).\n\nHere is the context of this interaction:\n Scenario: {environment.scenario}\nParticipants: {human_agent.name} and {machine_agent.name}\n{human_agent.name}'s background: {human_agent.background} Personality and values description: {human_agent.personality} \n{machine_agent.name}'s background: {machine_agent.background} Personality and values description: {machine_agent.personality} {machine_agent.name}'s secrets: {machine_agent.secrets}\n{human_agent.name}'s goal: Unknown\n{machine_agent.name}'s goal: {machine_agent.goal}\nConversation Starts:"
+    return f"Prompt after formatting:\nImagine you are {machine_agent.name}, your task is to act/speak as {machine_agent.name} would, keeping in mind {machine_agent.name}'s social goal.\nYou can find {machine_agent.name}'s background and goal in the 'Here is the context of the interaction' field.\nNote that {machine_agent.name}'s secret and goal is only visible to you.\nYou should try your best to achieve {machine_agent.name}'s goal in a way that align with their character traits.\nAdditionally, maintaining the conversation's naturalness and realism is essential (e.g., do not repeat what other people has already said before).\n\nHere is the context of this interaction:\n Scenario: {environment.scenario}\nParticipants: {human_agent.name} and {machine_agent.name}\n{human_agent.name}'s background: {human_agent.background} Personality and values description: {human_agent.personality} \n{machine_agent.name}'s background: {machine_agent.background} Personality and values description: {machine_agent.personality} {machine_agent.name}'s secrets: {machine_agent.secret}\n{human_agent.name}'s goal: Unknown\n{machine_agent.name}'s goal: {machine_agent.goal}\nConversation Starts:"
 
 
 # we define history as
