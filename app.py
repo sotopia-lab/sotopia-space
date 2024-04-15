@@ -93,7 +93,6 @@ def introduction():
         )
 
 
-
 def update_user_names(scenario, *args):
     # Placeholder logic to get user names based on the scenario
     user_names = {
@@ -111,22 +110,21 @@ def update_bot_names(user_name, scenario, *args):
     }
     return bot_names.get((user_name, scenario), [])
 
-def display_info(scenario, user_name, bot_name):
-    # Display additional information based on the current selection
-    return f"Info about {scenario}, {user_name}, and {bot_name}"
-
 def sotopia_info_accordion(accordion_visible=True):
     with gr.Accordion("Sotopia Information", open=accordion_visible):
         with gr.Column():
-            with gr.Row():
-                model_name  = gr.Dropdown(
-                    choices=["cmu-lti/sotopia-pi-mistral-7b-BC_SR", "mistralai/Mistral-7B-Instruct-v0.1", "GPT3.5"],  # Example model choices
-                    value="cmu-lti/sotopia-pi-mistral-7b-BC_SR",  # Default value
+            model_name = gr.Dropdown(
+                    choices=["cmu-lti/sotopia-pi-mistral-7b-BC_SR", "mistralai/Mistral-7B-Instruct-v0.1", "GPT3.5"],
+                    value="cmu-lti/sotopia-pi-mistral-7b-BC_SR",
                     interactive=True,
-                    label="Model Selection",
+                    label="Model Selection"
                 )
-                info_display = gr.Textbox(label="Information Display", lines=4)
-                
+            with gr.Row():
+                # Create separate Textboxes for scenario, user profile, and bot profile
+                scenario_info_display = gr.Textbox(label="Scenario", lines=4)
+                user_agent_info_display = gr.Textbox(label="User Agent Profile", lines=4)
+                bot_agent_info_display = gr.Textbox(label="Bot Agent Profile", lines=4)
+
             with gr.Row():
                 scenario_dropdown = gr.Dropdown(
                     choices=["Scenario 1", "Scenario 2"],
@@ -136,12 +134,26 @@ def sotopia_info_accordion(accordion_visible=True):
                 user_dropdown = gr.Dropdown(label="Human Agent Name")
                 bot_dropdown = gr.Dropdown(label="Machine Agent Name")
 
-                # Link updates
+                # Link updates and specify which information to update
                 scenario_dropdown.change(update_user_names, inputs=[scenario_dropdown], outputs=[user_dropdown])
                 user_dropdown.change(update_bot_names, inputs=[user_dropdown, scenario_dropdown], outputs=[bot_dropdown])
-                gr.update(change=display_info, inputs=[scenario_dropdown, user_dropdown, bot_dropdown], outputs=[info_display])
-
+                scenario_dropdown.change(update_scenario_info, inputs=[scenario_dropdown], outputs=[scenario_info_display])
+                user_dropdown.change(update_user_info, inputs=[user_dropdown], outputs=[user_agent_info_display])
+                bot_dropdown.change(update_bot_info, inputs=[bot_dropdown], outputs=[bot_agent_info_display])
+                
     return model_name, scenario_dropdown, user_dropdown, bot_dropdown
+
+# Example of an update function, you need to define the logic based on your application's data
+def update_scenario_info(scenario, scenario_info_display):
+    # Logic to update scenario information
+    scenario_info_display.value = "Details about " + scenario
+
+# Similar functions for user and bot information update
+def update_user_info(user_name, user_info_display):
+    user_info_display.value = "Profile for " + user_name
+
+def update_bot_info(bot_name, bot_info_display):
+    bot_info_display.value = "Profile for " + bot_name
 
 def instructions_accordion(instructions, according_visible=False):
     with gr.Accordion("Instructions", open=False, visible=according_visible):
