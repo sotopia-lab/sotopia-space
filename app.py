@@ -117,8 +117,8 @@ def create_user_names_dropdown(environment):
     _, agent_dict, relationship_dict = get_sotopia_profiles()
     user_names_list = []
     unique_agent_ids = set()
-    import pdb; pdb.set_trace()
-    for x, _ in relationship_dict[environment.value.relationship].items():
+    # import pdb; pdb.set_trace()
+    for x, _ in relationship_dict[environment.relationship].items():
         unique_agent_ids.add(x)
     
     for agent_id in unique_agent_ids:
@@ -128,25 +128,27 @@ def create_user_names_dropdown(environment):
 def create_bot_names_dropdown(environment, user_agent):
     _, agent_dict, relationship_dict = get_sotopia_profiles()
     bot_names_list = []
-    for neighbor in relationship_dict[environment.value.relationship][user_agent.value.agent_id]:
+    for neighbor in relationship_dict[environment.relationship][user_agent.agent_id]:
         bot_names_list.append((agent_dict[neighbor].name, agent_dict[neighbor]))
         
     return gr.Dropdown(choices=bot_names_list, value=bot_names_list[0][1] if bot_names_list else None)
 
 def create_scenario_info(scenario_dropdown):
-    text = scenario_dropdown.value.scenario
+    print("scenario dropdown: ", scenario_dropdown)
+    print("scenario dropdown type: ", type(scenario_dropdown))
+    print("scenarios dropdown: ", scenario_dropdown.codename)
+    text = scenario_dropdown.scenario
     return gr.Textbox(label="Scenario Information", lines=4, value=text)
 
 def create_user_info(user_dropdown):
-    text = f"{user_dropdown.value.background} \n {user_dropdown.value.personality}"
+    text = f"{user_dropdown.background} \n {user_dropdown.personality}"
     return gr.Textbox(label="User Agent Profile", lines=4, value=text)
 
 def create_bot_info(bot_dropdown):
-    text = f"{bot_dropdown.value.background} \n {bot_dropdown.value.personality}"
+    text = f"{bot_dropdown.background} \n {bot_dropdown.personality}"
     return gr.Textbox(label="Bot Agent Profile", lines=4, value=text)
 
 def sotopia_info_accordion(accordion_visible=True):
-    environments, _, _ = get_sotopia_profiles()
     
     with gr.Accordion("Sotopia Information", open=accordion_visible):
         with gr.Column():
@@ -157,19 +159,21 @@ def sotopia_info_accordion(accordion_visible=True):
                 label="Model Selection"
             )
         with gr.Row():
+            environments, _, _ = get_sotopia_profiles()
             scenario_dropdown = gr.Dropdown(
                 choices=environments,
                 label="Scenario Selection",
                 value=environments[0][1] if environments else None,
                 interactive=True,
             )
-            user_dropdown = create_user_names_dropdown(scenario_dropdown)
-            bot_dropdown = create_bot_names_dropdown(scenario_dropdown, user_dropdown)
+            print(scenario_dropdown.value)
+            user_dropdown = create_user_names_dropdown(scenario_dropdown.value)
+            bot_dropdown = create_bot_names_dropdown(scenario_dropdown.value, user_dropdown.value)
         
         with gr.Row():
-            scenario_info_display = create_scenario_info(scenario_dropdown)
-            user_agent_info_display = create_user_info(user_dropdown)
-            bot_agent_info_display = create_bot_info(bot_dropdown)
+            scenario_info_display = create_scenario_info(scenario_dropdown.value)
+            user_agent_info_display = create_user_info(user_dropdown.value)
+            bot_agent_info_display = create_bot_info(bot_dropdown.value)
 
         # Update user dropdown when scenario changes
         scenario_dropdown.change(fn=create_user_names_dropdown, inputs=[scenario_dropdown], outputs=[user_dropdown])

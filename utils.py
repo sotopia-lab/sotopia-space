@@ -26,6 +26,7 @@ class Environment:
         self._id = env_profile["env_id"]
         
         self.environment_profile = env_profile
+        self.codename = env_profile["codename"]
         self.scenario = env_profile["scenario"]
         self.agent_goals = env_profile["agent_goals"]
         self.relationship = env_profile["relationship"]
