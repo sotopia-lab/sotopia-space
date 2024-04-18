@@ -1,25 +1,19 @@
 import os
 from collections import defaultdict
-from dataclasses import dataclass
-from uuid import uuid4
 import json
 
 import gradio as gr
-import torch
-import transformers
-from peft import PeftConfig, PeftModel, get_peft_model
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    BitsAndBytesConfig,
-)
 
-from utils import Environment, Agent, format_sotopia_prompt, get_starter_prompt, format_bot_message
+from utils import Environment, Agent, get_context_prompt, dialogue_history_prompt
 from functools import cache
+from sotopia_pi_generate import prepare_model, generate_action
+
+with open("openai_api.key", "r") as f:
+    os.environ["OPENAI_API_KEY"] = f.read().strip()
 
 DEPLOYED = os.getenv("DEPLOYED", "true").lower() == "true"
 DEFAULT_MODEL_SELECTION = "cmu-lti/sotopia-pi-mistral-7b-BC_SR" # "mistralai/Mistral-7B-Instruct-v0.1"
-TEMPERATURE = 0.0
+TEMPERATURE = 0.7
 TOP_P = 1
 MAX_TOKENS = 1024
 
@@ -27,6 +21,7 @@ ENVIRONMENT_PROFILES = "profiles/environment_profiles.jsonl"
 AGENT_PROFILES = "profiles/agent_profiles.jsonl"
 RELATIONSHIP_PROFILES = "profiles/relationship_profiles.jsonl"
 
+ACTION_TYPES = ['none', 'action', 'non-verbal communication', 'speak', 'leave']
 
 @cache
 def get_sotopia_profiles(env_file=ENVIRONMENT_PROFILES, agent_file=AGENT_PROFILES, relationship_file=RELATIONSHIP_PROFILES):
@@ -67,35 +62,6 @@ def get_sotopia_profiles(env_file=ENVIRONMENT_PROFILES, agent_file=AGENT_PROFILE
         relationship_dict[profile['relationship']][profile['agent2_id']].append(profile['agent1_id'])
     
     return environments, environment_dict, agent_dict, relationship_dict
-
-@cache
-def prepare_model(model_name):
-    compute_type = torch.float16
-    
-    if 'cmu-lti/sotopia-pi-mistral-7b-BC_SR'in model_name:
-        model = AutoModelForCausalLM.from_pretrained(
-        "mistralai/Mistral-7B-Instruct-v0.1",
-        cache_dir="./.cache",
-        device_map='cuda',
-        quantization_config=BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_use_double_quant=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=compute_type,
-            )
-        )
-        tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
-        model = PeftModel.from_pretrained(model, model_name).to("cuda")
-    elif 'mistralai/Mistral-7B-Instruct-v0.1' in model_name:
-        model = AutoModelForCausalLM.from_pretrained(
-        "mistralai/Mistral-7B-Instruct-v0.1",
-        cache_dir="./.cache",
-        device_map='cuda',
-        )
-        tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
-    else:
-         raise RuntimeError(f"Model {model_name} not supported")
-    return model, tokenizer
 
 
 def introduction():
@@ -162,7 +128,7 @@ def sotopia_info_accordion(accordion_visible=True):
     with gr.Accordion("Sotopia Information", open=accordion_visible):
         with gr.Column():
             model_name_dropdown = gr.Dropdown(
-                choices=["cmu-lti/sotopia-pi-mistral-7b-BC_SR", "mistralai/Mistral-7B-Instruct-v0.1", "GPT3.5"],
+                choices=["cmu-lti/sotopia-pi-mistral-7b-BC_SR", "mistralai/Mistral-7B-Instruct-v0.1", "gpt-3.5-turbo"],
                 value="cmu-lti/sotopia-pi-mistral-7b-BC_SR",
                 interactive=True,
                 label="Model Selection"
@@ -213,50 +179,30 @@ def instructions_accordion(instructions, according_visible=False):
 
 def chat_tab():
     # history are input output pairs
+    _, environment_dict, agent_dict, _ = get_sotopia_profiles()
     def run_chat(
         message,
         history,
-        instructions,
+        environment_selection,
         user_agent_dropdown,
         bot_agent_dropdown,
         model_selection:str
     ):
-        user_name, bot_name = user_agent_dropdown.value.name, bot_agent_dropdown.value.name
-        model, tokenizer = prepare_model(model_selection)
-        prompt = format_sotopia_prompt(
-            message, history, instructions, user_name, bot_name
-        )
-        input_tokens = tokenizer(
-            prompt, return_tensors="pt", padding="do_not_pad"
-        ).input_ids.to("cuda")
-        input_length = input_tokens.shape[-1]
-        output_tokens = model.generate(
-            input_tokens,
-            temperature=TEMPERATURE,
-            top_p=TOP_P,
-            max_length=MAX_TOKENS,
-            pad_token_id=tokenizer.eos_token_id,
-            num_return_sequences=1,
-        )
-        output_tokens = output_tokens[:, input_length:]
-        text_output = tokenizer.decode(
-            output_tokens[0], skip_special_tokens=True
-        )
-        output = ""
-        for _ in range(5):
-            try:
-                output = format_bot_message(text_output)
-                break
-            except Exception as e:
-                print(e)
-                print("Retrying...")
-        return output
+        environment = environment_dict[environment_selection]
+        user_agent = agent_dict[user_agent_dropdown]
+        bot_agent = agent_dict[bot_agent_dropdown]
+        
+        import pdb; pdb.set_trace()
+        context = get_context_prompt(bot_agent, user_agent, environment)
+        dialogue_history, next_turn_idx = dialogue_history_prompt(message, history, user_agent, bot_agent)
+        prompt_history = f"{context}\n\n{dialogue_history}"
+        agent_action = generate_action(model_selection, prompt_history, next_turn_idx, ACTION_TYPES, bot_agent.name, TEMPERATURE)
+        import pdb; pdb.set_trace()
+        return agent_action.to_natural_language()
     
-    _, environment_dict, agent_dict, _ = get_sotopia_profiles()
     with gr.Column():
         with gr.Row():
             model_name_dropdown, scenario_dropdown, user_agent_dropdown, bot_agent_dropdown = sotopia_info_accordion()
-            starter_prompt = gr.Textbox(value=get_starter_prompt(agent_dict[user_agent_dropdown.value], agent_dict[bot_agent_dropdown.value], environment_dict[scenario_dropdown.value]), label="Modify the prompt as needed:", visible=False)
             
         with gr.Column():
             with gr.Blocks():
@@ -279,7 +225,7 @@ def chat_tab():
                         rtl=False,
                     ),
                     additional_inputs=[
-                        starter_prompt,
+                        scenario_dropdown,
                         user_agent_dropdown,
                         bot_agent_dropdown,
                         model_name_dropdown,
