@@ -74,7 +74,7 @@ def truncate_dialogue_history_to_length(dia_his, surpass_num, tokenizer):
 
 
 def format_bot_message(bot_message) -> str:
-    # import pdb; pdb.set_trace()
+    # # import pdb; pdb.set_trace()
     start_idx, end_idx = bot_message.index("{"), bot_message.index("}")
     if end_idx == -1:
         bot_message += "'}"

@@ -113,7 +113,7 @@ def obtain_chain_hf(
     model, tokenizer = prepare_model(model_name)
     pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, max_new_tokens=max_tokens, temperature=temperature)
     hf = HuggingFacePipeline(pipeline=pipe)
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     chain = LLMChain(llm=hf, prompt=chat_prompt_template)
     return chain
 
@@ -124,7 +124,7 @@ def generate(
     output_parser: BaseOutputParser[OutputType],
     temperature: float = 0.7,
 ) -> tuple[OutputType, str]:
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     input_variables = re.findall(r"{(.*?)}", template)
     assert (
         set(input_variables) == set(list(input_values.keys()) + ["format_instructions"])
@@ -136,7 +136,7 @@ def generate(
     if "format_instructions" not in input_values:
         input_values["format_instructions"] = output_parser.get_format_instructions()
     result = chain.predict([], **input_values)
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     try:
         parsed_result = output_parser.parse(result)
     except KeyboardInterrupt:
