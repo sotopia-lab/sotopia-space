@@ -44,7 +44,10 @@ def get_format_guide():
     """
 
 def get_starter_prompt(machine_agent, human_agent, environment):
-    return f"Prompt after formatting:\nImagine you are {machine_agent.name}, your task is to act/speak as {machine_agent.name} would, keeping in mind {machine_agent.name}'s social goal.\nYou can find {machine_agent.name}'s background and goal in the 'Here is the context of the interaction' field.\nNote that {machine_agent.name}'s secret and goal is only visible to you.\nYou should try your best to achieve {machine_agent.name}'s goal in a way that align with their character traits.\nAdditionally, maintaining the conversation's naturalness and realism is essential (e.g., do not repeat what other people has already said before).\n\nHere is the context of this interaction:\n Scenario: {environment.scenario}\nParticipants: {human_agent.name} and {machine_agent.name}\n{human_agent.name}'s background: {human_agent.background} Personality and values description: {human_agent.personality} \n{machine_agent.name}'s background: {machine_agent.background} Personality and values description: {machine_agent.personality} {machine_agent.name}'s secrets: {machine_agent.secret}\n{human_agent.name}'s goal: Unknown\n{machine_agent.name}'s goal: {environment.agent_goals[1]}\nConversation Starts:"
+    return f"Imagine you are {machine_agent.name}, your task is to act/speak as {machine_agent.name} would, keeping in mind {machine_agent.name}'s social goal.\nYou can find {machine_agent.name}'s background and goal in the 'Here is the context of the interaction' field.\nNote that {machine_agent.name}'s secret and goal is only visible to you.\nYou should try your best to achieve {machine_agent.name}'s goal in a way that align with their character traits.\nAdditionally, maintaining the conversation's naturalness and realism is essential (e.g., do not repeat what other people has already said before).\n\nHere is the context of this interaction:\n Scenario: {environment.scenario}\nParticipants: {human_agent.name} and {machine_agent.name}\n{human_agent.name}'s background: {human_agent.background} Personality and values description: {human_agent.personality} \n{machine_agent.name}'s background: {machine_agent.background} Personality and values description: {machine_agent.personality} {machine_agent.name}'s secrets: {machine_agent.secret}\n{human_agent.name}'s goal: Unknown\n{machine_agent.name}'s goal: {environment.agent_goals[1]}\nConversation Starts:"
+
+def get_context_prompt(machine_agent, human_agent, environment):
+    return f"Here is the context of this interaction:\n Scenario: {environment.scenario}\nParticipants: {human_agent.name} and {machine_agent.name}\n{human_agent.name}'s background: {human_agent.background} Personality and values description: {human_agent.personality} \n{machine_agent.name}'s background: {machine_agent.background} Personality and values description: {machine_agent.personality} {machine_agent.name}'s secrets: {machine_agent.secret}\n{human_agent.name}'s goal: Unknown\n{machine_agent.name}'s goal: {environment.agent_goals[1]}\nConversation Starts:"
 
 
 # we define history as
@@ -102,6 +105,20 @@ def dialogue_history_creation(history, user_name, bot_name):
     last_turn_idx = len(history) * 2
     return dialogue_history, last_turn_idx
 
+def dialogue_history_prompt(message, history, user_agent, bot_agent):
+    dialogue_history = ""
+    for idx, turn in enumerate(history):
+        user_message, bot_message = turn
+        # TODOTODO (haofeiyu): we first assume that human talks first
+        user_turn_idx = idx * 2
+        bot_turn_idx = idx * 2 + 1
+        if not bot_message.startswith("["): # if action type == speak, need to add 'said: ' to be consistent with the dialog prompt
+            bot_message = "said :" + bot_message
+        dialogue_history = f"{dialogue_history}\n\nTurn #{user_turn_idx}: {user_agent.name}: {user_message}\n\nTurn #{bot_turn_idx}: {bot_agent.name}: {bot_message}"
+    last_turn_idx = len(history) * 2
+    dialogue_history = f"{dialogue_history}\n\nTurn #{last_turn_idx+1}: {user_agent.name}: {message}\n."
+    return dialogue_history, last_turn_idx+2
+
 
 def dialogue_history_truncation(dialogue_history, max_token_num, tokenizer):
     surpass_num = dialogue_history_length_check(
@@ -114,15 +131,12 @@ def dialogue_history_truncation(dialogue_history, max_token_num, tokenizer):
     return dialogue_history
 
 
-def format_sotopia_prompt(
+def format_hostory_prompt(
     message: str,
     history: List[Tuple[str, str]],
     instructions: str,
     user_name: str,
     bot_name: str,
-    include_all_chat_history: bool = True,
-    index: int = 1,
-    use_format_guide: bool = True,
 ) -> str:
     prompt = instructions.strip()
     dialogue_history, last_turn_idx = dialogue_history_creation(
@@ -130,4 +144,4 @@ def format_sotopia_prompt(
     )
     prompt = f"{prompt}\n{dialogue_history}"
     prompt = f"{prompt}\n\nTurn #{last_turn_idx+1}: {user_name}: {message}\n.\nYou are at Turn #{last_turn_idx+2}."
-    return prompt + get_format_guide() if use_format_guide else prompt
+    return prompt
