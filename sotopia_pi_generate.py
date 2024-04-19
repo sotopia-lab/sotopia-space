@@ -159,7 +159,6 @@ def generate(
     output_parser: BaseOutputParser[OutputType],
     temperature: float = 0.7,
 ) -> OutputType:
-    # import pdb; pdb.set_trace()
     input_variables = re.findall(r"{(.*?)}", template)
     assert (
         set(input_variables) == set(list(input_values.keys()) + ["format_instructions"])
@@ -172,7 +171,6 @@ def generate(
         input_values["format_instructions"] = output_parser.get_format_instructions()
     result = chain.predict([logging_handler], **input_values)
     prompt = logging_handler.retrive_prompt()
-    import pdb; pdb.set_trace()
     try:
         parsed_result = output_parser.parse(result)
     except KeyboardInterrupt:
@@ -182,7 +180,6 @@ def generate(
             f"[red] Failed to parse result: {result}\nEncounter Exception {e}\nstart to reparse",
             extra={"markup": True},
         )
-        import pdb; pdb.set_trace()
         reformat_parsed_result = format_bad_output(
             result, format_instructions=output_parser.get_format_instructions()
         )

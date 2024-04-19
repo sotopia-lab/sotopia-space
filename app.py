@@ -102,7 +102,6 @@ def create_bot_agent_dropdown(environment_id, user_agent_id):
     environment, user_agent = environment_dict[environment_id], agent_dict[user_agent_id]
     
     bot_agent_list = []
-    # import pdb; pdb.set_trace()
     for neighbor_id in relationship_dict[environment.relationship][user_agent.agent_id]:
         bot_agent_list.append((agent_dict[neighbor_id].name, neighbor_id))
         
@@ -122,7 +121,6 @@ def create_user_info(user_agent_dropdown):
 
 def create_bot_info(bot_agent_dropdown):
     _, _, agent_dict, _ = get_sotopia_profiles()
-    # import pdb; pdb.set_trace()
     bot_agent = agent_dict[bot_agent_dropdown]
     text = f"{bot_agent.background} {bot_agent.personality}"
     return gr.Textbox(label="Bot Agent Profile", lines=4, value=text)
@@ -215,12 +213,10 @@ def chat_tab():
         user_agent = agent_dict[user_agent_dropdown]
         bot_agent = agent_dict[bot_agent_dropdown]
         
-        # import pdb; pdb.set_trace()
         context = get_context_prompt(bot_agent, user_agent, environment)
         dialogue_history, next_turn_idx = dialogue_history_prompt(message, history, user_agent, bot_agent)
         prompt_history = f"{context}\n\n{dialogue_history}"
         agent_action = generate_action(model_selection, prompt_history, next_turn_idx, ACTION_TYPES, bot_agent.name, TEMPERATURE)
-        # import pdb; pdb.set_trace()
         return agent_action.to_natural_language()
     
     with gr.Column():
