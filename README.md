@@ -10,4 +10,4 @@ pinned: false
 license: apache-2.0
 ---
 
-This is a synced repository with a Huggingface Space [demo](https://huggingface.co/spaces/wdplx/Sotopia-demo)
+This is a synced repository with a Huggingface Space for the Sotopia project [space](https://huggingface.co/spaces/wdplx/Sotopia-demo)
