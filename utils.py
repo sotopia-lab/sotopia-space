@@ -1,5 +1,6 @@
 from typing import List, Tuple
 import ast
+import re
 
 class Agent:
     def __init__(self, agent_profile):
@@ -48,3 +49,7 @@ def dialogue_history_prompt(message, history, user_agent, bot_agent):
     last_turn_idx = len(history) * 2
     dialogue_history = f"{dialogue_history}\n\nTurn #{last_turn_idx+1}: {user_agent.name}: {message}\n."
     return dialogue_history, last_turn_idx + 2
+
+def format_docstring(docstring: str) -> str:
+    """Format a docstring for use in a prompt template."""
+    return re.sub("\n +", "\n", docstring).strip()

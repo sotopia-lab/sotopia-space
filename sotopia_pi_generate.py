@@ -21,14 +21,16 @@ from langchain.prompts import (
     PromptTemplate,
 )
 from langchain.schema import BaseOutputParser, OutputParserException
-from sotopia.messages import ActionType, AgentAction
-from sotopia.utils import format_docstring
+from message_classes import ActionType, AgentAction
+from utils import format_docstring
+
+from langchain_callback_handler import LoggingCallbackHandler
 
 HF_TOKEN_KEY_FILE="./hf_token.key"
 
 OutputType = TypeVar("OutputType", bound=object)
 log = logging.getLogger("generate")
-# logging_handler = LoggingCallbackHandler("langchain")
+logging_handler = LoggingCallbackHandler("langchain")
 
 def generate_action(
     model_name: str,
@@ -37,7 +39,7 @@ def generate_action(
     action_types: list[ActionType],
     agent: str,
     temperature: float = 0.7,
-) -> tuple[AgentAction, str]:
+) -> AgentAction:
     """
     Using langchain to generate an example episode
     """
@@ -71,7 +73,7 @@ def generate_action(
             temperature=temperature,
         )
     except Exception:
-        return AgentAction(action_type="none", argument=""), ""
+        return AgentAction(action_type="none", argument="")
 
 @cache
 def prepare_model(model_name, hf_token_key_file=HF_TOKEN_KEY_FILE):
@@ -104,6 +106,15 @@ def prepare_model(model_name, hf_token_key_file=HF_TOKEN_KEY_FILE):
         token=hf_token
         )
         model = PeftModel.from_pretrained(model, model_name).to("cuda")
+    
+    elif model_name == 'mistralai/Mistral-7B-Instruct-v0.1':
+        tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1", token=hf_token)
+        model = AutoModelForCausalLM.from_pretrained(
+        "mistralai/Mistral-7B-Instruct-v0.1",
+        cache_dir="./.cache",
+        device_map='cuda',
+        token=hf_token
+        )
         
     else:
          raise RuntimeError(f"Model {model_name} not supported")
@@ -123,7 +134,16 @@ def obtain_chain_hf(
     )
     chat_prompt_template = ChatPromptTemplate.from_messages([human_message_prompt])
     model, tokenizer = prepare_model(model_name)
-    pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, max_new_tokens=max_tokens, temperature=temperature)
+    pipe = pipeline("text-generation", 
+                    model=model, 
+                    tokenizer=tokenizer, 
+                    max_new_tokens=100, 
+                    temperature=temperature, 
+                    return_full_text=False, 
+                    do_sample=True,
+                    num_beams=3,
+                    length_penalty=-1.0,
+                    )
     hf = HuggingFacePipeline(pipeline=pipe)
     chain = LLMChain(llm=hf, prompt=chat_prompt_template)
     return chain
@@ -134,8 +154,8 @@ def generate(
     input_values: dict[str, str],
     output_parser: BaseOutputParser[OutputType],
     temperature: float = 0.7,
-) -> tuple[OutputType, str]:
-    import pdb; pdb.set_trace()
+) -> OutputType:
+    # import pdb; pdb.set_trace()
     input_variables = re.findall(r"{(.*?)}", template)
     assert (
         set(input_variables) == set(list(input_values.keys()) + ["format_instructions"])
@@ -146,7 +166,8 @@ def generate(
     chain = obtain_chain(model_name, template, input_variables, temperature)
     if "format_instructions" not in input_values:
         input_values["format_instructions"] = output_parser.get_format_instructions()
-    result = chain.predict([], **input_values)
+    result = chain.predict([logging_handler], **input_values)
+    prompt = logging_handler.retrive_prompt()
     import pdb; pdb.set_trace()
     try:
         parsed_result = output_parser.parse(result)
@@ -157,6 +178,7 @@ def generate(
             f"[red] Failed to parse result: {result}\nEncounter Exception {e}\nstart to reparse",
             extra={"markup": True},
         )
+        import pdb; pdb.set_trace()
         reformat_parsed_result = format_bad_output(
             result, format_instructions=output_parser.get_format_instructions()
         )
@@ -186,7 +208,7 @@ def format_bad_output(
         "ill_formed_output": ill_formed_output,
         "format_instructions": format_instructions,
     }
-    reformat = chain.predict([], **input_values)
+    reformat = chain.predict([logging_handler], **input_values)
     log.info(f"Reformated output: {reformat}")
     return reformat
 
@@ -222,32 +244,6 @@ def obtain_chain(
     chat_prompt_template = ChatPromptTemplate.from_messages([human_message_prompt])
     chain = LLMChain(llm=chat, prompt=chat_prompt_template)
     return chain
-
-def format_bad_output(
-    ill_formed_output: str,
-    format_instructions: str,
-    model_name: str = "gpt-3.5-turbo",
-) -> str:
-    template = """
-    Given the string that can not be parsed by json parser, reformat it to a string that can be parsed by json parser.
-    Original string: {ill_formed_output}
-
-    Format instructions: {format_instructions}
-
-    Please only generate the JSON:
-    """
-    chain = obtain_chain(
-        model_name=model_name,
-        template=template,
-        input_variables=re.findall(r"{(.*?)}", template),
-    )
-    input_values = {
-        "ill_formed_output": ill_formed_output,
-        "format_instructions": format_instructions,
-    }
-    reformat = chain.predict([], **input_values)
-    log.info(f"Reformated output: {reformat}")
-    return reformat
 
 def _return_fixed_model_version(model_name: str) -> str:
     return {
