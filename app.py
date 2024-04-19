@@ -8,9 +8,6 @@ from utils import Environment, Agent, get_context_prompt, dialogue_history_promp
 from functools import cache
 from sotopia_pi_generate import prepare_model, generate_action
 
-with open("openai_api.key", "r") as f:
-    os.environ["OPENAI_API_KEY"] = f.read().strip()
-
 DEPLOYED = os.getenv("DEPLOYED", "true").lower() == "true"
 DEFAULT_MODEL_SELECTION = "gpt-3.5-turbo"
 TEMPERATURE = 0.7
@@ -22,6 +19,11 @@ AGENT_PROFILES = "profiles/agent_profiles.jsonl"
 RELATIONSHIP_PROFILES = "profiles/relationship_profiles.jsonl"
 
 ACTION_TYPES = ['none', 'action', 'non-verbal communication', 'speak', 'leave']
+
+OPENAI_KEY_FILE="./openai_api.key"
+if os.path.exists(OPENAI_KEY_FILE):
+    with open(OPENAI_KEY_FILE, "r") as f:
+        os.environ["OPENAI_API_KEY"] = f.read().strip()
 
 @cache
 def get_sotopia_profiles(env_file=ENVIRONMENT_PROFILES, agent_file=AGENT_PROFILES, relationship_file=RELATIONSHIP_PROFILES):
