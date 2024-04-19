@@ -5,17 +5,18 @@ from uuid import uuid4
 import gradio as gr
 import torch
 import transformers
-from peft import PeftConfig, PeftModel
+from peft import PeftConfig, PeftModel, get_peft_model
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     BitsAndBytesConfig,
 )
 
-from utils import Agent, format_sotopia_prompt, get_starter_prompt
+from utils import Agent, format_sotopia_prompt, get_starter_prompt, format_bot_message
+from functools import cache
 
 DEPLOYED = os.getenv("DEPLOYED", "true").lower() == "true"
-
+DEFAULT_MODEL_SELECTION = "cmu-lti/sotopia-pi-mistral-7b-BC_SR"
 
 def prepare_sotopia_info():
     human_agent = Agent(
@@ -40,22 +41,27 @@ def prepare_sotopia_info():
     instructions = get_starter_prompt(machine_agent, human_agent, scenario)
     return human_agent, machine_agent, scenario, instructions
 
-
-
-
+@cache
 def prepare(model_name):
     compute_type = torch.float16
-    config_dict = PeftConfig.from_json_file("peft_config.json")
-    config = PeftConfig.from_peft_type(**config_dict)
     
-    if 'mistral'in model_name:
-        model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1").to("cuda")
+    if 'cmu-lti/sotopia-pi-mistral-7b-BC_SR'in model_name:
+        model = AutoModelForCausalLM.from_pretrained(
+        "mistralai/Mistral-7B-Instruct-v0.1",
+        cache_dir="./.cache",
+        device_map='cuda',
+        quantization_config=BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=compute_type,
+            )
+        )
         tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
-        model = PeftModel.from_pretrained(model, model_name, config=config).to(compute_type).to("cuda")
+        model = PeftModel.from_pretrained(model, model_name).to("cuda")
     else:
-         tokenizer = AutoTokenizer.from_pretrained(model_name)
+         raise RuntimeError(f"Model {model_name} not supported")
     return model, tokenizer
-
 
 
 
@@ -79,7 +85,7 @@ def introduction():
 
 
 def param_accordion(according_visible=True):
-    with gr.Accordion("Parameters", open=False, visible=according_visible):
+    with gr.Accordion("Parameters", open=True, visible=according_visible):
         model_name  = gr.Dropdown(
             choices=["cmu-lti/sotopia-pi-mistral-7b-BC_SR", "mistralai/Mistral-7B-Instruct-v0.1", "GPT3.5"],  # Example model choices
             value="cmu-lti/sotopia-pi-mistral-7b-BC_SR",  # Default value
@@ -111,45 +117,31 @@ def param_accordion(according_visible=True):
     return temperature, session_id, max_tokens, model_name 
 
 
-def sotopia_info_accordion(
-    human_agent, machine_agent, scenario, according_visible=True
-):
-    with gr.Accordion(
-        "Sotopia Information", open=False, visible=according_visible
-    ):
+def sotopia_info_accordion(human_agent, machine_agent, scenario, accordion_visible=True):
+    with gr.Accordion("Sotopia Information", open=accordion_visible):
         with gr.Row():
-            with gr.Column():
-                user_name = gr.Textbox(
-                    lines=1,
-                    label="username",
-                    value=human_agent.name,
-                    interactive=True,
-                    placeholder=f"{human_agent.name}: ",
-                    show_label=False,
-                    max_lines=1,
-                )
-            with gr.Column():
-                bot_name = gr.Textbox(
-                    lines=1,
-                    value=machine_agent.name,
-                    interactive=True,
-                    placeholder=f"{machine_agent.name}: ",
-                    show_label=False,
-                    max_lines=1,
-                    visible=False,
-                )
-            with gr.Column():
-                scenario = gr.Textbox(
-                    lines=4,
-                    value=scenario,
-                    interactive=False,
-                    placeholder="Scenario",
-                    show_label=False,
-                    max_lines=4,
-                    visible=False,
-                )
-    return user_name, bot_name, scenario
-
+            user_name = gr.Textbox(
+                lines=1,
+                label="Human Agent Name",
+                value=human_agent.name,
+                interactive=True,
+                placeholder="Enter human agent name",
+            )
+            bot_name = gr.Textbox(
+                lines=1,
+                label="Machine Agent Name",
+                value=machine_agent.name,
+                interactive=True,
+                placeholder="Enter machine agent name",
+            )
+            scenario_textbox = gr.Textbox(
+                lines=4,
+                label="Scenario Description",
+                value=scenario,
+                interactive=True,
+                placeholder="Enter scenario description",
+            )
+    return user_name, bot_name, scenario_textbox
 
 def instructions_accordion(instructions, according_visible=False):
     with gr.Accordion("Instructions", open=False, visible=according_visible):
@@ -234,7 +226,7 @@ def chat_tab():
         text_output = tokenizer.decode(
             output_tokens[0], skip_special_tokens=True
         )
-        return text_output
+        return format_bot_message(text_output)
 
     with gr.Column():
         with gr.Row():
@@ -306,4 +298,5 @@ def start_demo():
 
 
 if __name__ == "__main__":
+    prepare(DEFAULT_MODEL_SELECTION)
     start_demo()
