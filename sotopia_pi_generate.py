@@ -1,17 +1,18 @@
 import re
+from typing import TypeVar
+from functools import cache
+import logging
 
 import torch
-from peft import PeftModel
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     BitsAndBytesConfig,
 )
-
+from peft import PeftModel
 from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 from langchain_community.chat_models import ChatLiteLLM
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
-
 from langchain.chains import LLMChain
 from langchain.output_parsers import PydanticOutputParser
 from langchain.prompts import (
@@ -20,15 +21,12 @@ from langchain.prompts import (
     PromptTemplate,
 )
 from langchain.schema import BaseOutputParser, OutputParserException
-from typing import TypeVar
-
 from sotopia.messages import ActionType, AgentAction
 from sotopia.utils import format_docstring
-from functools import cache
-import logging
+
+HF_TOKEN_KEY_FILE="./hf_token.key"
 
 OutputType = TypeVar("OutputType", bound=object)
-
 log = logging.getLogger("generate")
 # logging_handler = LoggingCallbackHandler("langchain")
 
@@ -76,11 +74,23 @@ def generate_action(
         return AgentAction(action_type="none", argument=""), ""
 
 @cache
-def prepare_model(model_name):
+def prepare_model(model_name, hf_token_key_file=HF_TOKEN_KEY_FILE):
     compute_type = torch.float16
+    with open (hf_token_key_file, 'r') as f:
+        hf_token = f.read().strip()
     
-    if 'cmu-lti/sotopia-pi-mistral-7b-BC_SR'in model_name:
-        tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1", token="REDACTED")
+    if model_name == 'cmu-lti/sotopia-pi-mistral-7b-BC_SR':
+        tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1", token=hf_token)
+        model = AutoModelForCausalLM.from_pretrained(
+        "mistralai/Mistral-7B-Instruct-v0.1",
+        cache_dir="./.cache",
+        device_map='cuda',
+        token=hf_token
+        )
+        model = PeftModel.from_pretrained(model, model_name).to("cuda")
+        
+    elif model_name == 'cmu-lti/sotopia-pi-mistral-7b-BC_SR_4bit':
+        tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1", token=hf_token)
         model = AutoModelForCausalLM.from_pretrained(
         "mistralai/Mistral-7B-Instruct-v0.1",
         cache_dir="./.cache",
@@ -91,11 +101,13 @@ def prepare_model(model_name):
             bnb_4bit_quant_type="nf4",
             bnb_4bit_compute_dtype=compute_type,
             ),
-        token="REDACTED"
+        token=hf_token
         )
         model = PeftModel.from_pretrained(model, model_name).to("cuda")
+        
     else:
          raise RuntimeError(f"Model {model_name} not supported")
+     
     return model, tokenizer
 
 def obtain_chain_hf(
@@ -113,7 +125,6 @@ def obtain_chain_hf(
     model, tokenizer = prepare_model(model_name)
     pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, max_new_tokens=max_tokens, temperature=temperature)
     hf = HuggingFacePipeline(pipeline=pipe)
-    # import pdb; pdb.set_trace()
     chain = LLMChain(llm=hf, prompt=chat_prompt_template)
     return chain
 
@@ -124,7 +135,7 @@ def generate(
     output_parser: BaseOutputParser[OutputType],
     temperature: float = 0.7,
 ) -> tuple[OutputType, str]:
-    # import pdb; pdb.set_trace()
+    import pdb; pdb.set_trace()
     input_variables = re.findall(r"{(.*?)}", template)
     assert (
         set(input_variables) == set(list(input_values.keys()) + ["format_instructions"])
@@ -136,7 +147,7 @@ def generate(
     if "format_instructions" not in input_values:
         input_values["format_instructions"] = output_parser.get_format_instructions()
     result = chain.predict([], **input_values)
-    # import pdb; pdb.set_trace()
+    import pdb; pdb.set_trace()
     try:
         parsed_result = output_parser.parse(result)
     except KeyboardInterrupt:
@@ -189,7 +200,7 @@ def obtain_chain(
     """
     Using langchain to sample profiles for participants
     """
-    if model_name in ["cmu-lti/sotopia-pi-mistral-7b-BC_SR"]:
+    if model_name in ["cmu-lti/sotopia-pi-mistral-7b-BC_SR", "cmu-lti/sotopia-pi-mistral-7b-BC_SR_4bit"]:
         return obtain_chain_hf(
             model_name=model_name,
             template=template,
