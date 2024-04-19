@@ -1,4 +1,5 @@
 import re
+import os
 from typing import TypeVar
 from functools import cache
 import logging
@@ -78,8 +79,11 @@ def generate_action(
 @cache
 def prepare_model(model_name, hf_token_key_file=HF_TOKEN_KEY_FILE):
     compute_type = torch.float16
-    with open (hf_token_key_file, 'r') as f:
-        hf_token = f.read().strip()
+    if os.path.exists(hf_token_key_file):
+        with open (hf_token_key_file, 'r') as f:
+            hf_token = f.read().strip()
+    else:
+        hf_token = os.environ["HF_TOKEN"]
     
     if model_name == 'cmu-lti/sotopia-pi-mistral-7b-BC_SR':
         tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1", token=hf_token)
