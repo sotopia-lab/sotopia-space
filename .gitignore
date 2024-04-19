@@ -1,4 +1,5 @@
 __pycache__/
 .cache/
 openai_api.key
+hf_token.key
 core

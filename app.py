@@ -12,7 +12,7 @@ with open("openai_api.key", "r") as f:
     os.environ["OPENAI_API_KEY"] = f.read().strip()
 
 DEPLOYED = os.getenv("DEPLOYED", "true").lower() == "true"
-DEFAULT_MODEL_SELECTION = "gpt-3.5-turbo" # "mistralai/Mistral-7B-Instruct-v0.1"
+DEFAULT_MODEL_SELECTION = "gpt-3.5-turbo"
 TEMPERATURE = 0.7
 TOP_P = 1
 MAX_TOKENS = 1024
@@ -147,7 +147,7 @@ def sotopia_info_accordion(accordion_visible=True):
                 interactive=True,
             )
             model_name_dropdown = gr.Dropdown(
-                choices=["cmu-lti/sotopia-pi-mistral-7b-BC_SR", "mistralai/Mistral-7B-Instruct-v0.1", "gpt-3.5-turbo", "gpt-4-turbo"],
+                choices=["cmu-lti/sotopia-pi-mistral-7b-BC_SR", "cmu-lti/sotopia-pi-mistral-7b-BC_SR_4bit", "mistralai/Mistral-7B-Instruct-v0.1", "gpt-3.5-turbo", "gpt-4-turbo"],
                 value=DEFAULT_MODEL_SELECTION,
                 interactive=True,
                 label="Model Selection"
