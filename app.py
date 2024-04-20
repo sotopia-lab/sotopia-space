@@ -1,6 +1,7 @@
 import os
 from collections import defaultdict
 import json
+from typing import Literal
 
 import gradio as gr
 
@@ -24,6 +25,21 @@ AGENT_PROFILES = "profiles/agent_profiles.jsonl"
 RELATIONSHIP_PROFILES = "profiles/relationship_profiles.jsonl"
 
 ACTION_TYPES = ['none', 'action', 'non-verbal communication', 'speak', 'leave']
+
+MODEL_OPTIONS = [
+    "gpt-3.5-turbo",
+    "gpt-4",
+    "gpt-4-turbo",
+    "cmu-lti/sotopia-pi-mistral-7b-BC_SR",
+    "cmu-lti/sotopia-pi-mistral-7b-BC_SR_4bit",
+    "mistralai/Mistral-7B-Instruct-v0.1"
+    # "mistralai/Mixtral-8x7B-Instruct-v0.1",
+    # "togethercomputer/llama-2-7b-chat",
+    # "togethercomputer/llama-2-70b-chat",
+    # "togethercomputer/mpt-30b-chat",
+    # "together_ai/togethercomputer/llama-2-7b-chat",
+    # "together_ai/togethercomputer/falcon-7b-instruct",
+]
 
 @cache
 def get_sotopia_profiles(env_file=ENVIRONMENT_PROFILES, agent_file=AGENT_PROFILES, relationship_file=RELATIONSHIP_PROFILES):
@@ -126,13 +142,27 @@ def create_bot_info(bot_agent_dropdown):
     return gr.Textbox(label="Bot Agent Profile", lines=4, value=text)
 
 def create_user_goal(environment_dropdown):
-     _, environment_dict, _, _ = get_sotopia_profiles()
-     text = environment_dict[environment_dropdown].agent_goals[0]
-     return gr.Textbox(label="User Agent Goal", lines=4, value=text)
+    _, environment_dict, _, _ = get_sotopia_profiles()
+    text = environment_dict[environment_dropdown].agent_goals[0]
+    text = text.replace('(', '').replace(')', '')
+    if "<extra_info>" in text:
+        text = text.replace("<extra_info>", "\n\n")
+        text = text.replace("</extra_info>", "\n")
+    if "<strategy_hint>" in text:
+        text = text.replace("<strategy_hint>", "\n\n")
+        text = text.replace("</strategy_hint>", "\n")
+    return gr.Textbox(label="User Agent Goal", lines=4, value=text)
 
 def create_bot_goal(environment_dropdown):
     _, environment_dict, _, _ = get_sotopia_profiles()
     text = environment_dict[environment_dropdown].agent_goals[1]
+    text = text.replace('(', '').replace(')', '')
+    if "<extra_info>" in text:
+        text = text.replace("<extra_info>", "\n\n")
+        text = text.replace("</extra_info>", "\n")
+    if "<strategy_hint>" in text:
+        text = text.replace("<strategy_hint>", "\n\n")
+        text = text.replace("</strategy_hint>", "\n")
     return gr.Textbox(label="Bot Agent Goal", lines=4, value=text)
 
 def sotopia_info_accordion(accordion_visible=True):
@@ -147,7 +177,7 @@ def sotopia_info_accordion(accordion_visible=True):
                 interactive=True,
             )
             model_name_dropdown = gr.Dropdown(
-                choices=["cmu-lti/sotopia-pi-mistral-7b-BC_SR", "cmu-lti/sotopia-pi-mistral-7b-BC_SR_4bit", "mistralai/Mistral-7B-Instruct-v0.1", "gpt-3.5-turbo", "gpt-4-turbo"],
+                choices=MODEL_OPTIONS,
                 value=DEFAULT_MODEL_SELECTION,
                 interactive=True,
                 label="Model Selection"
@@ -215,7 +245,7 @@ def chat_tab():
         
         context = get_context_prompt(bot_agent, user_agent, environment)
         dialogue_history, next_turn_idx = dialogue_history_prompt(message, history, user_agent, bot_agent)
-        prompt_history = f"{context}\n\n{dialogue_history}"
+        prompt_history = f"{context}{dialogue_history}"
         agent_action = generate_action(model_selection, prompt_history, next_turn_idx, ACTION_TYPES, bot_agent.name, TEMPERATURE)
         return agent_action.to_natural_language()
     

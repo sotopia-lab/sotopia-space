@@ -28,6 +28,9 @@ from utils import format_docstring
 from langchain_callback_handler import LoggingCallbackHandler
 
 HF_TOKEN_KEY_FILE="./hf_token.key"
+if os.path.exists(HF_TOKEN_KEY_FILE):
+    with open(HF_TOKEN_KEY_FILE, "r") as f:
+        os.environ["HF_TOKEN"] = f.read().strip()
 
 OutputType = TypeVar("OutputType", bound=object)
 log = logging.getLogger("generate")
@@ -44,59 +47,54 @@ def generate_action(
     """
     Using langchain to generate an example episode
     """
-    try:
+    # try:
         # Normal case, model as agent
-        template = """
-            Imagine you are {agent}, your task is to act/speak as {agent} would, keeping in mind {agent}'s social goal.
-            You can find {agent}'s goal (or background) in the 'Here is the context of the interaction' field.
-            Note that {agent}'s goal is only visible to you.
-            You should try your best to achieve {agent}'s goal in a way that align with their character traits.
-            Additionally, maintaining the conversation's naturalness and realism is essential (e.g., do not repeat what other people has already said before).
-            {history}.
-            You are at Turn #{turn_number}. Your available action types are
-            {action_list}.
-            Note: You can "leave" this conversation if 1. you have achieved your social goals, 2. this conversation makes you uncomfortable, 3. you find it uninteresting/you lose your patience, 4. or for other reasons you want to leave.
+    template = """
+        Imagine you are {agent}, your task is to act/speak as {agent} would, keeping in mind {agent}'s social goal.
+        You can find {agent}'s goal (or background) in the 'Here is the context of the interaction' field.
+        Note that {agent}'s goal is only visible to you.
+        You should try your best to achieve {agent}'s goal in a way that align with their character traits.
+        Additionally, maintaining the conversation's naturalness and realism is essential (e.g., do not repeat what other people has already said before).\n
+        {history}.
+        You are at Turn #{turn_number}. Your available action types are
+        {action_list}.
+        Note: You can "leave" this conversation if 1. you have achieved your social goals, 2. this conversation makes you uncomfortable, 3. you find it uninteresting/you lose your patience, 4. or for other reasons you want to leave.
 
-            Please only generate a JSON string including the action type and the argument.
-            Your action should follow the given format:
-            {format_instructions}
-        """
-        return generate(
-            model_name=model_name,
-            template=template,
-            input_values=dict(
-                agent=agent,
-                turn_number=str(turn_number),
-                history=history,
-                action_list=" ".join(action_types),
-            ),
-            output_parser=PydanticOutputParser(pydantic_object=AgentAction),
-            temperature=temperature,
-        )
-    except Exception:
-        return AgentAction(action_type="none", argument="")
+        Please only generate a JSON string including the action type and the argument.
+        Your action should follow the given format:
+        {format_instructions}
+    """
+    return generate(
+        model_name=model_name,
+        template=template,
+        input_values=dict(
+            agent=agent,
+            turn_number=str(turn_number),
+            history=history,
+            action_list=" ".join(action_types),
+        ),
+        output_parser=PydanticOutputParser(pydantic_object=AgentAction),
+        temperature=temperature,
+    )
+    # except Exception as e:
+    #     print(e)
+    #     return AgentAction(action_type="none", argument="")
 
 @cache
-def prepare_model(model_name, hf_token_key_file=HF_TOKEN_KEY_FILE):
+def prepare_model(model_name):
     compute_type = torch.float16
-    if os.path.exists(hf_token_key_file):
-        with open (hf_token_key_file, 'r') as f:
-            hf_token = f.read().strip()
-    else:
-        hf_token = os.environ["HF_TOKEN"]
     
     if model_name == 'cmu-lti/sotopia-pi-mistral-7b-BC_SR':
-        tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1", token=hf_token)
+        tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1", model_max_length=4096)
         model = AutoModelForCausalLM.from_pretrained(
         "mistralai/Mistral-7B-Instruct-v0.1",
         cache_dir="./.cache",
-        device_map='cuda',
-        token=hf_token
+        device_map='cuda'
         )
         model = PeftModel.from_pretrained(model, model_name).to("cuda")
         
     elif model_name == 'cmu-lti/sotopia-pi-mistral-7b-BC_SR_4bit':
-        tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1", token=hf_token)
+        tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1", model_max_length=4096)
         model = AutoModelForCausalLM.from_pretrained(
         "mistralai/Mistral-7B-Instruct-v0.1",
         cache_dir="./.cache",
@@ -106,18 +104,17 @@ def prepare_model(model_name, hf_token_key_file=HF_TOKEN_KEY_FILE):
             bnb_4bit_use_double_quant=True,
             bnb_4bit_quant_type="nf4",
             bnb_4bit_compute_dtype=compute_type,
-            ),
-        token=hf_token
+            )
         )
-        model = PeftModel.from_pretrained(model, model_name).to("cuda")
+        model = PeftModel.from_pretrained(model, model_name[0:-5]).to("cuda")
     
     elif model_name == 'mistralai/Mistral-7B-Instruct-v0.1':
-        tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1", token=hf_token)
+        tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1", model_max_length=4096)
+        tokenizer.model_max_length = 4096
         model = AutoModelForCausalLM.from_pretrained(
         "mistralai/Mistral-7B-Instruct-v0.1",
         cache_dir="./.cache",
-        device_map='cuda',
-        token=hf_token
+        device_map='cuda'
         )
         
     else:
@@ -146,7 +143,6 @@ def obtain_chain_hf(
                     return_full_text=False, 
                     do_sample=True,
                     num_beams=3,
-                    length_penalty=-1.0,
                     )
     hf = HuggingFacePipeline(pipeline=pipe)
     chain = LLMChain(llm=hf, prompt=chat_prompt_template)
@@ -171,6 +167,8 @@ def generate(
         input_values["format_instructions"] = output_parser.get_format_instructions()
     result = chain.predict([logging_handler], **input_values)
     prompt = logging_handler.retrive_prompt()
+    print(f"Prompt:\n {prompt}")
+    print(f"Result:\n {result}")
     try:
         parsed_result = output_parser.parse(result)
     except KeyboardInterrupt:
@@ -183,6 +181,7 @@ def generate(
         reformat_parsed_result = format_bad_output(
             result, format_instructions=output_parser.get_format_instructions()
         )
+        print(f"Reformatted result:\n {reformat_parsed_result}")
         parsed_result = output_parser.parse(reformat_parsed_result)
     log.info(f"Generated result: {parsed_result}")
     return parsed_result
@@ -223,7 +222,7 @@ def obtain_chain(
     """
     Using langchain to sample profiles for participants
     """
-    if model_name in ["cmu-lti/sotopia-pi-mistral-7b-BC_SR", "cmu-lti/sotopia-pi-mistral-7b-BC_SR_4bit"]:
+    if model_name in ["cmu-lti/sotopia-pi-mistral-7b-BC_SR", "cmu-lti/sotopia-pi-mistral-7b-BC_SR_4bit", "mistralai/Mistral-7B-Instruct-v0.1"]:
         return obtain_chain_hf(
             model_name=model_name,
             template=template,
@@ -247,10 +246,11 @@ def obtain_chain(
     return chain
 
 def _return_fixed_model_version(model_name: str) -> str:
-    return {
+    model_version_map = {
         "gpt-3.5-turbo": "gpt-3.5-turbo-0613",
         "gpt-3.5-turbo-finetuned": "ft:gpt-3.5-turbo-0613:academicscmu::8nY2zgdt",
         "gpt-3.5-turbo-ft-MF": "ft:gpt-3.5-turbo-0613:academicscmu::8nuER4bO",
         "gpt-4": "gpt-4-0613",
         "gpt-4-turbo": "gpt-4-1106-preview",
-    }[model_name]
+    }
+    return model_version_map[model_name] if model_name in model_version_map else model_name
