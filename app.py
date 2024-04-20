@@ -89,14 +89,16 @@ def introduction():
         )
     with gr.Column(scale=5):
         gr.Markdown(
-            """# Sotopia-Pi Demo
-            **Chat with [Sotopia-Pi](https://github.com/sotopia-lab/sotopia-pi), brainstorm ideas, discuss your holiday plans, and more!**
+            """# Sotopia Space
+            **Chat with different social agent models including [sotopia-pi](https://github.com/sotopia-lab/sotopia-pi), GPT and so on in sotopia space!**
 
-            ➡️️ **Intended Use**: this demo is intended to showcase an early finetuning of [sotopia-pi-mistral-7b-BC_SR](https://huggingface.co/cmu-lti/sotopia-pi-mistral-7b-BC_SR)/
+            ➡️️ **Intended Use**: Sotopia space is intended to showcase the social intelligence ability of different social agents in interesting social scenarios. 
+            
+            ➡️ **Guidance**: Step (1) Select a social scenario that interests you; Step (2) select a social agent you want to chat with; Step (3) negotiate/debate/cooperate with the agents to see whether your goal or their social goal can be achieved.
 
-            ⚠️ **Limitations**: the model can and will produce factually incorrect information, hallucinating facts and actions. As it has not undergone any advanced tuning/alignment, it can produce problematic outputs, especially if prompted to do so. Finally, this demo is limited to a session length of about 1,000 words.
+            ⚠️ **Limitations**: The social agent can and will produce factually incorrect information, hallucinating facts and potentially offensive actions. It can produce problematic outputs, especially if prompted to do so.
 
-            🗄️ **Disclaimer**: User prompts and generated replies from the model may be collected by TII solely for the purpose of enhancing and refining our models. TII will not store any personally identifiable information associated with your inputs. By using this demo, users implicitly agree to these terms.
+            🗄️ **Disclaimer**: User prompts and generated replies from the model may be collected solely for the purpose of pure academic research. By using this demo, users implicitly agree to these terms.
             """
         )
 
