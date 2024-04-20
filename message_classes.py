@@ -120,7 +120,7 @@ class AgentAction(Message):
             case "none":
                 return "did nothing"
             case "speak":
-                return f'said: "{self.argument}"'
+                return f"{self.argument}"
             case "non-verbal communication":
                 return f"[{self.action_type}] {self.argument}"
             case "action":
