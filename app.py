@@ -94,7 +94,15 @@ def introduction():
 
             ➡️️ **Intended Use**: Sotopia space is intended to showcase the social intelligence ability of different social agents in interesting social scenarios. 
             
-            ➡️ **Guidance**: Step (1) Select a social scenario that interests you; Step (2) select a social agent you want to chat with; Step (3) negotiate/debate/cooperate with the agents to see whether your goal or their social goal can be achieved.
+            ✨ **Guidance**: 
+            
+            Step (1) Select a social scenario that interests you in "Scenario Selection"
+            
+            Step (2) Select a social agent you want to chat with in "Model Selection"
+
+            Step (3) Select which character you and your social agent will play in the scenario in "User Agent Selection" and "Bot Agent Selection" 
+            
+            Step (4) Negotiate/debate/cooperate with the social agent to see whether your goal or their social goal can be achieved.
 
             ⚠️ **Limitations**: The social agent can and will produce factually incorrect information, hallucinating facts and potentially offensive actions. It can produce problematic outputs, especially if prompted to do so.
 
@@ -170,7 +178,7 @@ def create_bot_goal(environment_dropdown):
 def sotopia_info_accordion(accordion_visible=True):
     environments, _, _, _ = get_sotopia_profiles()
     
-    with gr.Accordion("Environment Configuration", open=accordion_visible):
+    with gr.Accordion("Create your sotopia space!", open=accordion_visible):
         with gr.Row():
             environment_dropdown = gr.Dropdown(
                 choices=environments,
@@ -184,35 +192,39 @@ def sotopia_info_accordion(accordion_visible=True):
                 interactive=True,
                 label="Model Selection"
             )
-        
+
+        with gr.Row():
+            user_agent_dropdown = create_user_agent_dropdown(environment_dropdown.value)
+            bot_agent_dropdown = create_bot_agent_dropdown(environment_dropdown.value, user_agent_dropdown.value)
+
+    with gr.Accordion("Check your social task!", open=accordion_visible):
+
         scenario_info_display = create_environment_info(environment_dropdown.value)
             
         with gr.Row():
             bot_goal_display = create_bot_goal(environment_dropdown.value)
             user_goal_display = create_user_goal(environment_dropdown.value)
             
-        with gr.Row():
-            user_agent_dropdown = create_user_agent_dropdown(environment_dropdown.value)
-            bot_agent_dropdown = create_bot_agent_dropdown(environment_dropdown.value, user_agent_dropdown.value)
+
         
         with gr.Row():
             user_agent_info_display = create_user_info(user_agent_dropdown.value)
             bot_agent_info_display = create_bot_info(bot_agent_dropdown.value)
 
-        # Update user dropdown when scenario changes
-        environment_dropdown.change(fn=create_user_agent_dropdown, inputs=[environment_dropdown], outputs=[user_agent_dropdown])
-        # Update bot dropdown when user or scenario changes
-        user_agent_dropdown.change(fn=create_bot_agent_dropdown, inputs=[environment_dropdown, user_agent_dropdown], outputs=[bot_agent_dropdown])
-        # Update scenario information when scenario changes
-        environment_dropdown.change(fn=create_environment_info, inputs=[environment_dropdown], outputs=[scenario_info_display])
-        # Update user agent profile when user changes
-        user_agent_dropdown.change(fn=create_user_info, inputs=[user_agent_dropdown], outputs=[user_agent_info_display])
-        # Update bot agent profile when bot changes
-        bot_agent_dropdown.change(fn=create_bot_info, inputs=[bot_agent_dropdown], outputs=[bot_agent_info_display])
-        # Update user goal when scenario changes
-        environment_dropdown.change(fn=create_user_goal, inputs=[environment_dropdown], outputs=[user_goal_display])
-        # Update bot goal when scenario changes
-        environment_dropdown.change(fn=create_bot_goal, inputs=[environment_dropdown], outputs=[bot_goal_display])
+    # Update user dropdown when scenario changes
+    environment_dropdown.change(fn=create_user_agent_dropdown, inputs=[environment_dropdown], outputs=[user_agent_dropdown])
+    # Update bot dropdown when user or scenario changes
+    user_agent_dropdown.change(fn=create_bot_agent_dropdown, inputs=[environment_dropdown, user_agent_dropdown], outputs=[bot_agent_dropdown])
+    # Update scenario information when scenario changes
+    environment_dropdown.change(fn=create_environment_info, inputs=[environment_dropdown], outputs=[scenario_info_display])
+    # Update user agent profile when user changes
+    user_agent_dropdown.change(fn=create_user_info, inputs=[user_agent_dropdown], outputs=[user_agent_info_display])
+    # Update bot agent profile when bot changes
+    bot_agent_dropdown.change(fn=create_bot_info, inputs=[bot_agent_dropdown], outputs=[bot_agent_info_display])
+    # Update user goal when scenario changes
+    environment_dropdown.change(fn=create_user_goal, inputs=[environment_dropdown], outputs=[user_goal_display])
+    # Update bot goal when scenario changes
+    environment_dropdown.change(fn=create_bot_goal, inputs=[environment_dropdown], outputs=[bot_goal_display])
 
     return model_name_dropdown, environment_dropdown, user_agent_dropdown, bot_agent_dropdown
 
@@ -252,11 +264,11 @@ def chat_tab():
         return agent_action.to_natural_language()
     
     with gr.Column():
-        with gr.Row():
+        with gr.Blocks():
             model_name_dropdown, scenario_dropdown, user_agent_dropdown, bot_agent_dropdown = sotopia_info_accordion()
             
         with gr.Column():
-            with gr.Blocks():
+            with gr.Accordion("Start the conversation to achieve your goal!", open=True):
                 gr.ChatInterface(
                     fn=run_chat,
                     chatbot=gr.Chatbot(
