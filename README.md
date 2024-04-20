@@ -1,5 +1,5 @@
 ---
-title: Sotopia Demo
+title: Sotopia Space
 emoji: 💻
 colorFrom: green
 colorTo: pink
