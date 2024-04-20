@@ -178,7 +178,7 @@ def create_bot_goal(environment_dropdown):
 def sotopia_info_accordion(accordion_visible=True):
     environments, _, _, _ = get_sotopia_profiles()
     
-    with gr.Accordion("Sotopia Space Configuration", open=accordion_visible):
+    with gr.Accordion("Create your sotopia space!", open=accordion_visible):
         with gr.Row():
             environment_dropdown = gr.Dropdown(
                 choices=environments,
@@ -197,7 +197,7 @@ def sotopia_info_accordion(accordion_visible=True):
             user_agent_dropdown = create_user_agent_dropdown(environment_dropdown.value)
             bot_agent_dropdown = create_bot_agent_dropdown(environment_dropdown.value, user_agent_dropdown.value)
 
-    with gr.Accordion("Sotopia Space Information", open=accordion_visible):
+    with gr.Accordion("Check your social task!", open=accordion_visible):
 
         scenario_info_display = create_environment_info(environment_dropdown.value)
             
@@ -268,7 +268,7 @@ def chat_tab():
             model_name_dropdown, scenario_dropdown, user_agent_dropdown, bot_agent_dropdown = sotopia_info_accordion()
             
         with gr.Column():
-            with gr.Accordion("Sotopia Space Conversation", open=True):
+            with gr.Accordion("Start the conversation to achieve your goal!", open=True):
                 gr.ChatInterface(
                     fn=run_chat,
                     chatbot=gr.Chatbot(
