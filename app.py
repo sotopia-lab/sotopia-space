@@ -208,8 +208,8 @@ def sotopia_info_accordion(accordion_visible=True):
 
         
         with gr.Row():
-            user_agent_info_display = create_user_info(user_agent_dropdown.value)
             bot_agent_info_display = create_bot_info(bot_agent_dropdown.value)
+            user_agent_info_display = create_user_info(user_agent_dropdown.value)
 
     # Update user dropdown when scenario changes
     environment_dropdown.change(fn=create_user_agent_dropdown, inputs=[environment_dropdown], outputs=[user_agent_dropdown])
