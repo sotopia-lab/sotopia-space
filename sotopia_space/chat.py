@@ -19,7 +19,8 @@ ENVIRONMENT_PROFILES = "profiles/environment_profiles.jsonl"
 AGENT_PROFILES = "profiles/agent_profiles.jsonl"
 RELATIONSHIP_PROFILES = "profiles/relationship_profiles.jsonl"
 
-ACTION_TYPES = Literal['none', 'action', 'non-verbal communication', 'speak', 'leave']
+Action = Literal['none', 'action', 'non-verbal communication', 'speak', 'leave']
+ACTION_TYPES: list[Action] = ['none', 'action', 'non-verbal communication', 'speak', 'leave']
 
 
 
