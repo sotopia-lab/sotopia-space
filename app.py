@@ -45,7 +45,7 @@ with gr.Blocks(
     # with gr.Row():
     #     navigation_bar()
     gr.Image(
-            "images/banner.png", elem_id="banner-image", show_label=False
+            "images/banner.jpg", elem_id="banner-image", show_label=False
         )
     gr.Markdown(HEADER_MD, elem_classes="markdown-text")
     with gr.Tabs(elem_classes="tab-buttons") as tabs:
