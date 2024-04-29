@@ -37,7 +37,7 @@ OutputType = TypeVar("OutputType", bound=object)
 log = logging.getLogger("generate")
 logging_handler = LoggingCallbackHandler("langchain")
 
-@spaces.GPU
+# @spaces.GPU
 def generate_action(
     model_name: str,
     history: str,
@@ -82,6 +82,7 @@ def generate_action(
     #     print(e)
     #     return AgentAction(action_type="none", argument="")
 
+@spaces.GPU(duration=1200)
 @cache
 def prepare_model(model_name):
     compute_type = torch.float16
