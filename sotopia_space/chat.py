@@ -91,8 +91,6 @@ def chat_introduction():
             🗄️ **Disclaimer**: User prompts and generated replies from the model may be collected solely for the purpose of pure academic research. By using this demo, users implicitly agree to these terms.
             """
         )
-    # with gr.Column(scale=1):
-    #     toggle_dark = gr.Button(value="Toggle Dark")
 
 def create_user_agent_dropdown(environment_id):
     _, environment_dict, agent_dict, relationship_dict = get_sotopia_profiles()
