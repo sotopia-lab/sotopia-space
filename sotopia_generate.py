@@ -3,6 +3,7 @@ import os
 from typing import TypeVar
 from functools import cache
 import logging
+import json
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
@@ -22,9 +23,10 @@ from langchain.prompts import (
     PromptTemplate,
 )
 from langchain.schema import BaseOutputParser, OutputParserException
+import spaces
+
 from message_classes import ActionType, AgentAction
 from utils import format_docstring
-
 from langchain_callback_handler import LoggingCallbackHandler
 
 HF_TOKEN_KEY_FILE="./hf_token.key"
@@ -89,7 +91,7 @@ def prepare_model(model_name):
         model = AutoModelForCausalLM.from_pretrained(
         "mistralai/Mistral-7B-Instruct-v0.1",
         cache_dir="./.cache",
-        device_map='cuda'
+        # device_map='cuda'
         )
         model = PeftModel.from_pretrained(model, model_name).to("cuda")
         
@@ -98,7 +100,7 @@ def prepare_model(model_name):
         model = AutoModelForCausalLM.from_pretrained(
         "mistralai/Mistral-7B-Instruct-v0.1",
         cache_dir="./.cache",
-        device_map='cuda',
+        # device_map='cuda',
         quantization_config=BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_use_double_quant=True,
@@ -114,7 +116,7 @@ def prepare_model(model_name):
         model = AutoModelForCausalLM.from_pretrained(
         "mistralai/Mistral-7B-Instruct-v0.1",
         cache_dir="./.cache",
-        device_map='cuda'
+        # device_map='cuda'
         )
         
     else:
@@ -131,7 +133,7 @@ def obtain_chain_hf(
     max_tokens: int = 2700
 ) -> LLMChain:
     human_message_prompt = HumanMessagePromptTemplate(
-        prompt=PromptTemplate(template=template, input_variables=input_variables)
+        prompt=PromptTemplate(template="[INST] " + template + " [/INST]", input_variables=input_variables)
     )
     chat_prompt_template = ChatPromptTemplate.from_messages([human_message_prompt])
     model, tokenizer = prepare_model(model_name)
@@ -147,6 +149,7 @@ def obtain_chain_hf(
     hf = HuggingFacePipeline(pipeline=pipe)
     chain = LLMChain(llm=hf, prompt=chat_prompt_template)
     return chain
+
 
 def generate(
     model_name: str,
