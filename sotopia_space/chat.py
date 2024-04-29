@@ -145,6 +145,9 @@ def create_user_goal(environment_dropdown):
     if "<strategy_hint>" in text:
         text = text.replace("<strategy_hint>", "\n\n")
         text = text.replace("</strategy_hint>", "\n")
+    if "<clarification_hint>" in text:
+        text = text.replace("<clarification_hint>", "\n\n")
+        text = text.replace("</clarification_hint>", "\n")
     return gr.Textbox(label="User Agent Goal", lines=4, value=text)
 
 def create_bot_goal(environment_dropdown):
