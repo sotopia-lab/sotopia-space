@@ -6,7 +6,7 @@ from typing import Literal
 import json
 from collections import defaultdict
 from utils import Environment, Agent, get_context_prompt, dialogue_history_prompt
-from sotopia_pi_generate import prepare_model, generate_action
+from sotopia_generate import prepare_model, generate_action
 from sotopia_space.constants import MODEL_OPTIONS
 
 DEPLOYED = os.getenv("DEPLOYED", "true").lower() == "true"

@@ -5,7 +5,7 @@ MODEL_OPTIONS = [
     "cmu-lti/sotopia-pi-mistral-7b-BC_SR",
     "cmu-lti/sotopia-pi-mistral-7b-BC_SR_4bit",
     "mistralai/Mistral-7B-Instruct-v0.1"
-    # "mistralai/Mixtral-8x7B-Instruct-v0.1",
+    # "mistralai/Mixtral-8x7B-Instruct-v0.1", # TODO: Add these model
     # "togethercomputer/llama-2-7b-chat",
     # "togethercomputer/llama-2-70b-chat",
     # "togethercomputer/mpt-30b-chat",
