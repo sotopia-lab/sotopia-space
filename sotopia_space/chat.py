@@ -10,7 +10,7 @@ from sotopia_generate import prepare_model, generate_action
 from sotopia_space.constants import MODEL_OPTIONS
 
 DEPLOYED = os.getenv("DEPLOYED", "true").lower() == "true"
-DEFAULT_MODEL_SELECTION = "gpt-3.5-turbo"
+DEFAULT_MODEL_SELECTION = "cmu-lti/sotopia-pi-mistral-7b-BC_SR"
 TEMPERATURE = 0.7
 TOP_P = 1
 MAX_TOKENS = 1024
