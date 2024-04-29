@@ -15,8 +15,7 @@ def benchmark_table():
     gr.Markdown(f"**Version**: sotopia (v1.01; 2024.04.22) | **# Examples**: 7200 | **# Models**: {len(MODEL_OPTIONS)} | **# Comparisons**: x", elem_classes="markdown-text")
                 
     with gr.TabItem("Vs GPT-3.5", elem_id="od-benchmark-tab-table-ablation", id=0, elem_classes="subtab"):
-        original_df = pd.read_json('data_dir/models_vs_gpt35.jsonl', lines=True)
-        default_main_df = original_df
+        default_main_df = pd.read_json('data_dir/models_vs_gpt35.jsonl', lines=True)
         default_main_df = default_main_df.sort_values(by="GOAL [0, 10]", ascending=False)
         default_main_df = post_processing(default_main_df, None)
         # add a Rank column to the first columnn (starting from 1)
