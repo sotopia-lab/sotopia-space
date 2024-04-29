@@ -3,7 +3,6 @@ import os
 from typing import TypeVar
 from functools import cache
 import logging
-import json
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
@@ -38,6 +37,7 @@ OutputType = TypeVar("OutputType", bound=object)
 log = logging.getLogger("generate")
 logging_handler = LoggingCallbackHandler("langchain")
 
+@spaces.GPU
 def generate_action(
     model_name: str,
     history: str,
