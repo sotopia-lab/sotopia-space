@@ -149,7 +149,7 @@ def obtain_chain_hf(
     chain = LLMChain(llm=hf, prompt=chat_prompt_template)
     return chain
 
-@spaces.GPU
+@spaces.GPU(duration=120)
 def generate(
     model_name: str,
     template: str,
