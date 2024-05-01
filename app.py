@@ -49,13 +49,13 @@ with gr.Blocks(
         )
     gr.Markdown(HEADER_MD, elem_classes="markdown-text")
     with gr.Tabs(elem_classes="tab-buttons") as tabs:
-        with gr.TabItem("🏅 Leaderboard", elem_id="benchmark-tab-table", id=0):
-            benchmark.benchmark_table()
         with gr.TabItem("💬 Chat", elem_id="chat-tab-interface", id=1): 
             with gr.Row():
                 chat_introduction()
             with gr.Row():
                 chat_tab()
+        with gr.TabItem("🏅 Leaderboard", elem_id="benchmark-tab-table", id=0):
+            benchmark.benchmark_table()
     with gr.Row():
         with gr.Accordion("📙 Citation", open=False, elem_classes="accordion-label"):
             gr.Textbox(
