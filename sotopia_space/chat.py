@@ -121,19 +121,19 @@ def create_environment_info(environment_dropdown):
     _, environment_dict, _, _ = get_sotopia_profiles()
     environment = environment_dict[environment_dropdown]
     text = environment.scenario
-    return gr.Textbox(label="Scenario", lines=1, value=text)
+    return gr.Textbox(label="Scenario", lines=2, value=text)
 
 def create_user_info(user_agent_dropdown):
     _, _, agent_dict, _ = get_sotopia_profiles()
     user_agent = agent_dict[user_agent_dropdown]
     text = f"{user_agent.background} {user_agent.personality}"
-    return gr.Textbox(label="User Agent Profile", lines=4, value=text)
+    return gr.Textbox(label="User Agent Profile", lines=5, value=text)
 
 def create_bot_info(bot_agent_dropdown):
     _, _, agent_dict, _ = get_sotopia_profiles()
     bot_agent = agent_dict[bot_agent_dropdown]
     text = f"{bot_agent.background} {bot_agent.personality}"
-    return gr.Textbox(label="Bot Agent Profile", lines=4, value=text)
+    return gr.Textbox(label="Bot Agent Profile", lines=5, value=text)
 
 def create_user_goal(environment_dropdown):
     _, environment_dict, _, _ = get_sotopia_profiles()
@@ -148,7 +148,7 @@ def create_user_goal(environment_dropdown):
     if "<clarification_hint>" in text:
         text = text.replace("<clarification_hint>", "\n\n")
         text = text.replace("</clarification_hint>", "\n")
-    return gr.Textbox(label="User Agent Goal", lines=4, value=text)
+    return gr.Textbox(label="User Agent Goal", lines=5, value=text)
 
 def create_bot_goal(environment_dropdown):
     _, environment_dict, _, _ = get_sotopia_profiles()
@@ -160,7 +160,7 @@ def create_bot_goal(environment_dropdown):
     if "<strategy_hint>" in text:
         text = text.replace("<strategy_hint>", "\n\n")
         text = text.replace("</strategy_hint>", "\n")
-    return gr.Textbox(label="Bot Agent Goal", lines=4, value=text)
+    return gr.Textbox(label="Bot Agent Goal", lines=5, value=text)
 
 def sotopia_info_accordion(accordion_visible=True):
     environments, _, _, _ = get_sotopia_profiles()
