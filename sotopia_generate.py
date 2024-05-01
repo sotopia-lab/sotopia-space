@@ -81,7 +81,7 @@ def generate_action(
     #     print(e)
     #     return AgentAction(action_type="none", argument="")
 
-
+@cache
 def prepare_model(model_name):
     compute_type = torch.float16
     
