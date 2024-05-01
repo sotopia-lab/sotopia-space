@@ -15,7 +15,7 @@ This is a synced repository with a Huggingface Space for the Sotopia project [sp
 ## Getting Started
 
 ```bash
-conda create -n sotopia-space python=3.11; conda activate sotopia-space
+conda create -n sotopia-space python=3.10.13; conda activate sotopia-space
 python -m pip install -r requirements.txt
 ```
 

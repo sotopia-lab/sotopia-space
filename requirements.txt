@@ -20,3 +20,4 @@ referencing==0.34.0
 torch==2.2.0
 tqdm==4.66.2
 transformers==4.40.0
+spaces==0.27.0
