@@ -165,7 +165,7 @@ def create_bot_goal(environment_dropdown):
 def sotopia_info_accordion(accordion_visible=True):
     environments, _, _, _ = get_sotopia_profiles()
     
-    with gr.Accordion("Create your sotopia space!", open=accordion_visible):
+    with gr.Accordion("Create your sotopia space!", open=False, visible=accordion_visible):
         with gr.Row():
             environment_dropdown = gr.Dropdown(
                 choices=environments,
@@ -183,6 +183,10 @@ def sotopia_info_accordion(accordion_visible=True):
         with gr.Row():
             user_agent_dropdown = create_user_agent_dropdown(environment_dropdown.value)
             bot_agent_dropdown = create_bot_agent_dropdown(environment_dropdown.value, user_agent_dropdown.value)
+            
+        with gr.Row():
+            user_agent_info_display = create_user_info(user_agent_dropdown.value)
+            bot_agent_info_display = create_bot_info(bot_agent_dropdown.value)
 
     with gr.Accordion("Check your social task!", open=accordion_visible):
 
@@ -192,11 +196,6 @@ def sotopia_info_accordion(accordion_visible=True):
             bot_goal_display = create_bot_goal(environment_dropdown.value)
             user_goal_display = create_user_goal(environment_dropdown.value)
             
-
-        
-        with gr.Row():
-            bot_agent_info_display = create_bot_info(bot_agent_dropdown.value)
-            user_agent_info_display = create_user_info(user_agent_dropdown.value)
 
     # Update user dropdown when scenario changes
     environment_dropdown.change(fn=create_user_agent_dropdown, inputs=[environment_dropdown], outputs=[user_agent_dropdown])
