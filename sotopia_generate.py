@@ -82,6 +82,7 @@ def generate_action(
     #     return AgentAction(action_type="none", argument="")
 
 @cache
+@spaces.GPU(600)
 def prepare_model(model_name):
     compute_type = torch.float16
     
@@ -90,7 +91,7 @@ def prepare_model(model_name):
         model = AutoModelForCausalLM.from_pretrained(
         "mistralai/Mistral-7B-Instruct-v0.1",
         cache_dir="./.cache",
-        # device_map='cuda'
+        device_map='cuda'
         )
         model = PeftModel.from_pretrained(model, model_name).to("cuda")
         
@@ -99,7 +100,7 @@ def prepare_model(model_name):
         model = AutoModelForCausalLM.from_pretrained(
         "mistralai/Mistral-7B-Instruct-v0.1",
         cache_dir="./.cache",
-        # device_map='cuda',
+        device_map='cuda',
         quantization_config=BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_use_double_quant=True,
@@ -149,7 +150,7 @@ def obtain_chain_hf(
     chain = LLMChain(llm=hf, prompt=chat_prompt_template)
     return chain
 
-@spaces.GPU(duration=120)
+
 def generate(
     model_name: str,
     template: str,
