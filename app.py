@@ -40,7 +40,7 @@ with gr.Blocks(
             #create_container {height: 750px; margin-left: 0px; margin-right: 0px;}
             #tokenizer_renderer span {white-space: pre-wrap}
             """,
-    theme="gradio/monochrome",
+    theme="bethecloud/storj_theme",
 ) as demo:
     # with gr.Row():
     #     navigation_bar()
