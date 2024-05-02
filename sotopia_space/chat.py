@@ -182,16 +182,17 @@ def sotopia_info_accordion(accordion_visible=True):
             user_agent_dropdown = create_user_agent_dropdown(environment_dropdown.value)
             bot_agent_dropdown = create_bot_agent_dropdown(environment_dropdown.value, user_agent_dropdown.value)
             
-        with gr.Row():
-            user_agent_info_display = create_user_info(user_agent_dropdown.value)
-            bot_agent_info_display = create_bot_info(bot_agent_dropdown.value)
 
     with gr.Accordion("Check your social task!", open=accordion_visible):
 
         scenario_info_display = create_environment_info(environment_dropdown.value)
             
         with gr.Row():
-            bot_goal_display = create_bot_goal(environment_dropdown.value)
+            user_agent_info_display = create_user_info(user_agent_dropdown.value)
+            bot_agent_info_display = create_bot_info(bot_agent_dropdown.value)
+            
+        with gr.Row():
+            # bot_goal_display = create_bot_goal(environment_dropdown.value)
             user_goal_display = create_user_goal(environment_dropdown.value)
             
 
@@ -208,7 +209,7 @@ def sotopia_info_accordion(accordion_visible=True):
     # Update user goal when scenario changes
     environment_dropdown.change(fn=create_user_goal, inputs=[environment_dropdown], outputs=[user_goal_display])
     # Update bot goal when scenario changes
-    environment_dropdown.change(fn=create_bot_goal, inputs=[environment_dropdown], outputs=[bot_goal_display])
+    # environment_dropdown.change(fn=create_bot_goal, inputs=[environment_dropdown], outputs=[bot_goal_display])
 
     return model_name_dropdown, environment_dropdown, user_agent_dropdown, bot_agent_dropdown
 
@@ -252,7 +253,7 @@ def chat_tab():
             
         with gr.Column():
             with gr.Accordion("Start the conversation to achieve your goal!", open=True):
-                gr.ChatInterface(
+                chat_interface = gr.ChatInterface(
                     fn=run_chat,
                     chatbot=gr.Chatbot(
                         height=620,
