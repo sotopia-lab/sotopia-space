@@ -87,7 +87,7 @@ def chat_introduction():
             Step (4) Negotiate/debate/cooperate with the social agent to see whether your goal or their social goal can be achieved.
             
             🤗 **Latency**: We are proundly endorsed by Huggingface Zero GPUs for model serving. Due to its internal mechanism, users
-            may experience a slight delay in the first response (around 30s). Subsequent responses will be faster.
+            may experience **a slight delay in the first response (around 30s)**. Subsequent responses will be faster.
             
             ⚠️ **Limitations**: The social agent can and will produce factually incorrect information, hallucinating facts and potentially offensive actions. It can produce problematic outputs, especially if prompted to do so.
 
