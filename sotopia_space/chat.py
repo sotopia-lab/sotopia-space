@@ -85,10 +85,14 @@ def chat_introduction():
             Step (3) Select which character you and your social agent will play in the scenario in "User Agent Selection" and "Bot Agent Selection" 
             
             Step (4) Negotiate/debate/cooperate with the social agent to see whether your goal or their social goal can be achieved.
-
+            
+            🤗 **Latency**: We are proundly endorsed by Huggingface Zero GPUs for model serving. Due to its internal mechanism, users
+            may experience a slight delay in the first response (around 30s). Subsequent responses will be faster.
+            
             ⚠️ **Limitations**: The social agent can and will produce factually incorrect information, hallucinating facts and potentially offensive actions. It can produce problematic outputs, especially if prompted to do so.
 
             🗄️ **Disclaimer**: User prompts and generated replies from the model may be collected solely for the purpose of pure academic research. By using this demo, users implicitly agree to these terms.
+            
             """
         )
 
