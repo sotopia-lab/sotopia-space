@@ -250,8 +250,6 @@ def obtain_chain(
 def _return_fixed_model_version(model_name: str) -> str:
     model_version_map = {
         "gpt-3.5-turbo": "gpt-3.5-turbo-0613",
-        "gpt-3.5-turbo-finetuned": "ft:gpt-3.5-turbo-0613:academicscmu::8nY2zgdt",
-        "gpt-3.5-turbo-ft-MF": "ft:gpt-3.5-turbo-0613:academicscmu::8nuER4bO",
         "gpt-4": "gpt-4-0613",
         "gpt-4-turbo": "gpt-4-1106-preview",
     }
